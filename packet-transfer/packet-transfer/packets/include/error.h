@@ -1,0 +1,8 @@
+#define SUCCESS 0
+#define GENERIC_ERROR 1
+
+#define MEMORY_ERROR 2
+#define DATA_INTEGRITY_ERROR 3
+#define INVALID_PACKET_ERROR 4
+#define FILE_ERROR 5
+

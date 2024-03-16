@@ -4,14 +4,20 @@ ARG REINSTALL_CMAKE_VERSION_FROM_SOURCE="none"
 
 # Optionally install the cmake for vcpkg
 COPY ./reinstall-cmake.sh /tmp/
-COPY ./install-gtest.sh /tmp/
 
 RUN if [ "${REINSTALL_CMAKE_VERSION_FROM_SOURCE}" != "none" ]; then \
         chmod +x /tmp/reinstall-cmake.sh && /tmp/reinstall-cmake.sh ${REINSTALL_CMAKE_VERSION_FROM_SOURCE}; \
     fi \
     && rm -f /tmp/reinstall-cmake.sh
 
-RUN chmod +x /tmp/install-gtest.sh && /tmp/install-gtest.sh
+RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
+    && apt-get -y install --no-install-recommends \
+    # Install CppCheck and clang-format
+    && apt-get -y install --no-install-recommends cppcheck clang-format \
+    # Install Python3 and pip
+    && apt-get -y install --no-install-recommends python3-pip \
+    # Install Conan
+    && pip install conan
 
 
 
