@@ -106,3 +106,11 @@ int assemble_message(uint8_t *message) {
     }
 }
 ```
+
+#### Złozoność obliczeniowa
+
+$\mathcal{O}(n) = 2n = n$, gdzie $n$ to liczba pakietów
+
+#### Złozoność pamięciowa
+
+#\mathcal{O}(n) = 2n = n$, gdzie $n$ to rozmiar wiadomości
