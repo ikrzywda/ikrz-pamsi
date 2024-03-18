@@ -1,16 +1,16 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include "packet.h"
-
 #include <stdint.h>
 #include <stdio.h>
+
+#include "packet.h"
 
 #define MAX_PATH_LENGTH 256
 
 typedef enum {
   INITIALIZED,
-  PACKETIZED,
+  PACKET_BUFFER_READY,
   PACKET_BUFFER_SERIALIZED,
 } MessageDataState;
 
@@ -23,10 +23,9 @@ typedef struct {
   MessageDataState state;
 } MessageData;
 
-int init_message_data(MessageData *message_data, const char *input_file_path, unsigned int packet_size);
+int init_message_data(MessageData *message_data, const char *input_file_path,
+                      unsigned int packet_size);
 int destroy_message_data(MessageData *message_data);
-
 int build_packet_buffer(MessageData *message_data);
-int serialize_packet_buffer(unsigned int buffer_length, MessageData *message_data);
 
-#endif // MESSAGE_H
+#endif  // MESSAGE_H

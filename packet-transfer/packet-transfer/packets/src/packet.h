@@ -5,9 +5,16 @@
 
 #define MAX_PAYLOAD_SIZE 1024
 
+typedef enum {
+  DATA,
+  START,
+  END,
+} PacketType;
+
 typedef struct {
   uint32_t id;
   uint32_t length;
+  PacketType type;
   uint8_t* payload;
 } Packet;
 

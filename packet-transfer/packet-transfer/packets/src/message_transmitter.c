@@ -1,5 +1,3 @@
-
-
 #include "message_transmitter.h"
 
 #include "include/error.h"
@@ -89,4 +87,6 @@ int build_packet_buffer(MessageData *message_data) {
   }
   message_data->state = PACKET_BUFFER_READY;
   return SUCCESS;
+}
+
 
