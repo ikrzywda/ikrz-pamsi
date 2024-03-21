@@ -2,6 +2,9 @@
 #define PACKET_H
 
 #include <stdint.h>
+#include <stdlib.h>
+
+#include "include/error.h"
 
 #define MAX_PAYLOAD_SIZE 1024
 
@@ -12,13 +15,15 @@ typedef enum {
 } PacketType;
 
 typedef struct {
-  uint32_t id;
-  uint32_t length;
   PacketType type;
+  size_t message_length;
+  size_t range_start;
+  size_t range_end;
   uint8_t* payload;
 } Packet;
 
-int init_packet(Packet* packet_ptr, uint32_t id, uint32_t length,
+int init_packet(Packet* packet_ptr, size_t message_length,
+                size_t range_start, size_t range_end,
                 uint8_t* payload);
 
 #endif  // PACKET_H

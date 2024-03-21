@@ -5,4 +5,3 @@
 #define DATA_INTEGRITY_ERROR 3
 #define INVALID_PACKET_ERROR 4
 #define FILE_ERROR 5
-

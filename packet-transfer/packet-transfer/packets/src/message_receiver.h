@@ -20,5 +20,4 @@ int destroy_receiver_data(ReceiverData *receiver_data);
 int receive_packet(ReceiverData *receiver_data, const Packet *packet);
 int deserialize_packet_buffer(ReceiverData *receiver_data);
 
-
 #endif  // MESSAGE_RECEIVER_H

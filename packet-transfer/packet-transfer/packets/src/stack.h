@@ -1,12 +1,11 @@
 #ifndef STACK_H
 #define STACK_H
 
-#include "include/error.h"
-
-#include "packet.h"
-
 #include <stdint.h>
 #include <stdlib.h>
+
+#include "include/error.h"
+#include "packet.h"
 
 typedef struct {
   unsigned int size;

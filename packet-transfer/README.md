@@ -78,7 +78,6 @@ typedef struct {
 
 int _assemble_message(Stack *packet_stack, uint8_t *message) {
     for (int i = 0; i < packet_stack.size, i++) {
-        int offset = packet.id *
         memcpy(message + packet.range_start, &packet.payload, packet.range_end - packet.range_start);
     }
     return 0;
@@ -113,4 +112,4 @@ $\mathcal{O}(n) = 2n = n$, gdzie $n$ to liczba pakietów
 
 #### Złozoność pamięciowa
 
-#\mathcal{O}(n) = 2n = n$, gdzie $n$ to rozmiar wiadomości
+$\mathcal{O}(n) = 2n = n$, gdzie $n$ to rozmiar wiadomości
