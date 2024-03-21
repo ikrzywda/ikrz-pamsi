@@ -1,0 +1,8 @@
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
+
+#define MAX_PATH_LENGTH 256
+#define MAX_PAYLOAD_SIZE 1024
+#define DEFAULT_STACK_CAPACITY 128
+
+#endif  // CONSTANTS_H

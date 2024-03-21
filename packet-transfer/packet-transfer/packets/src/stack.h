@@ -22,4 +22,6 @@ int pop_stack(Stack *stack, Packet *packet);
 int is_empty_stack(Stack *stack);
 int is_full_stack(Stack *stack);
 
+int head_stack(Stack *stack, Packet *packet);
+
 #endif  // STACK_H

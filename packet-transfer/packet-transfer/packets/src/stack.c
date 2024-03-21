@@ -21,7 +21,7 @@ int destroy_stack(Stack *stack) {
   if (!stack) {
     return MEMORY_ERROR;
   }
-  for (int i = 0; i < stack->size; i++) {
+  for (size_t i = 0; i < stack->size; i++) {
     free(stack->buffer[i].payload);
   }
   free(stack->buffer);
@@ -64,4 +64,15 @@ int is_full_stack(Stack *stack) {
     return MEMORY_ERROR;
   }
   return stack->size == stack->capacity;
+}
+
+int head_stack(Stack *stack, Packet *packet) {
+  if (!stack || !packet) {
+    return MEMORY_ERROR;
+  }
+  if (is_empty_stack(stack)) {
+    return DATA_INTEGRITY_ERROR;
+  }
+  *packet = stack->buffer[stack->size - 1];
+  return SUCCESS;
 }

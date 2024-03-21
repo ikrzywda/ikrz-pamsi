@@ -5,8 +5,9 @@
 #include <stdlib.h>
 
 #include "include/error.h"
+#include "constants.h"
 
-#define MAX_PAYLOAD_SIZE 1024
+
 
 typedef enum {
   DATA,

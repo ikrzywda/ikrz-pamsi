@@ -54,7 +54,7 @@ int build_packet_buffer(MessageData *message_data) {
   size_t last_max_packet_size =
       message_data->message_size % message_data->packet_count;
 
-  for (int i = 0; i < message_data->packet_count - 1; i++) {
+  for (unsigned int i = 0; i < message_data->packet_count - 1; i++) {
     size_t packet_range_start = i * max_packet_size;
     size_t packet_range_end =
         (packet_range_start - 1) +
