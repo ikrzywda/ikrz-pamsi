@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "include/error.h"
+#include "common.h"
 #include "packet.h"
 
 typedef struct {
@@ -20,7 +20,9 @@ int push_stack(Stack *stack, Packet packet);
 int pop_stack(Stack *stack, Packet *packet);
 
 int is_empty_stack(Stack *stack);
-int is_full_stack(Stack *stack);
+
+int increase_stack_capacity(Stack *stack);
+int decrease_stack_capacity(Stack *stack);
 
 int head_stack(Stack *stack, Packet *packet);
 

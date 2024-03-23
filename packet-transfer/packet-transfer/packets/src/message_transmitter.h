@@ -1,14 +1,14 @@
 #ifndef MESSAGE_TRANSIMITTER_H
 #define MESSAGE_TRANSIMITTER_H
 
-#include "include/error.h"
+#include "common.h"
 #include "packet.h"
 
 #include <stdint.h>
 #include <stdio.h>
 
 
-#define MAX_PATH_LENGTH 256
+
 
 typedef enum {
   INITIALIZED,

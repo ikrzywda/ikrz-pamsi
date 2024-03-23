@@ -1,8 +1,8 @@
 #ifndef MESSAGE_RECEIVER_H
 #define MESSAGE_RECEIVER_H
 
+#include "common.h"
 #include "stack.h"
-#include "constants.h"
 
 #include <stdio.h>
 

@@ -32,8 +32,8 @@ int push_stack(Stack *stack, Packet packet) {
   if (!stack) {
     return MEMORY_ERROR;
   }
-  if (is_full_stack(stack)) {
-    return DATA_INTEGRITY_ERROR;
+  if (stack->size == stack->capacity && increase_stack_capacity(stack) != SUCCESS) {
+    return MEMORY_ERROR;
   }
   stack->buffer[stack->size] = packet;
   stack->size = stack->size + 1;
@@ -59,11 +59,32 @@ int is_empty_stack(Stack *stack) {
   return stack->size == 0;
 }
 
-int is_full_stack(Stack *stack) {
+int increase_stack_capacity(Stack *stack) {
   if (!stack) {
     return MEMORY_ERROR;
   }
-  return stack->size == stack->capacity;
+  unsigned int new_capacity = stack->capacity * 2;
+  Packet *new_buffer = (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
+  if (!new_buffer) {
+    return MEMORY_ERROR;
+  }
+  stack->buffer = new_buffer;
+  stack->capacity = new_capacity;
+  return SUCCESS;
+}
+
+int decrease_stack_capacity(Stack *stack) {
+  if (!stack) {
+    return MEMORY_ERROR;
+  }
+  unsigned int new_capacity = stack->capacity / 2;
+  Packet *new_buffer = (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
+  if (!new_buffer) {
+    return MEMORY_ERROR;
+  }
+  stack->buffer = new_buffer;
+  stack->capacity = new_capacity;
+  return SUCCESS;
 }
 
 int head_stack(Stack *stack, Packet *packet) {

@@ -1,3 +1,6 @@
+#ifndef ERROR_H
+#define ERROR_H
+
 #define SUCCESS 0
 #define GENERIC_ERROR 1
 
@@ -5,3 +8,6 @@
 #define DATA_INTEGRITY_ERROR 3
 #define INVALID_PACKET_ERROR 4
 #define FILE_ERROR 5
+#define INVALID_ARGUMENTS 6
+
+#endif // ERROR_H
