@@ -7,6 +7,7 @@
 #include "common.h"
 
 
+
 typedef enum {
   DATA,
   START,
@@ -21,10 +22,11 @@ typedef struct {
   uint8_t* payload;
 } Packet;
 
-int init_packet(Packet* packet_ptr, size_t message_length,
+int init_packet(Packet* packet_ptr, PacketType packet_type, size_t message_length,
                 size_t range_start, size_t range_end,
                 uint8_t* payload);
 
 int destroy_packet(Packet* packet_ptr);
+void print_packet(Packet* packet_ptr);
 
 #endif  // PACKET_H

@@ -47,17 +47,17 @@ int assemble_message(uint8_t *output_message_buffer_ptr,
   }
 
   Stack *packet_stack = &receiver_data->packet_stack;
-  Packet *packet_buffer = packet_stack->buffer;
   Packet packet;
-  size_t message_length;
   int status_code;
+
   if ((status_code = head_stack(packet_stack, &packet)) != SUCCESS ||
       packet.message_length < 1) {
     LOG_ERROR("Failed to get packet from stack or message length is invalid, "
               "status code: %d, message length: %zu",
-              status_code, message_length);
+              status_code, packet.message_length);
     return DATA_INTEGRITY_ERROR;
   }
+  size_t message_length = packet.message_length;
   size_t packet_count = packet_stack->size;
 
   for (size_t i = 0; i < packet_count; i++) {
@@ -76,4 +76,5 @@ int assemble_message(uint8_t *output_message_buffer_ptr,
     memcpy(output_message_buffer_ptr + packet.range_start, packet.payload,
            payload_length);
   }
+  return SUCCESS;
 }

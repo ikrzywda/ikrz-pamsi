@@ -50,6 +50,7 @@ int pop_stack(Stack *stack, Packet *packet) {
   }
   *packet = stack->buffer[stack->size - 1];
   stack->size = stack->size - 1;
+  print_packet(packet);
   return SUCCESS;
 }
 

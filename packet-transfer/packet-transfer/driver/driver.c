@@ -105,7 +105,7 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
   }
 
   log_timing_stage(driver_data, MESSAGE_GENERATED, 1);
-  if (generate_message(&message, input_file_path,
+  if (generate_message(message, input_file_path,
                        message_length,
                        message_offset) != SUCCESS) {
     LOG_ERROR("Failed to generate message");
@@ -131,7 +131,10 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
     return GENERIC_ERROR;
   }
 
-  if (init_message_data(driver_data->message_data, &message, message_length, part_length) != SUCCESS){ 
+  LOG_DEBUG("Initializing message data with message length %zu and part length %zu",
+            message_length, part_length);
+
+  if (init_message_data(driver_data->message_data, message, message_length, part_length) != SUCCESS){ 
     LOG_ERROR("Failed to initialize message data");
     return GENERIC_ERROR;
   }
@@ -141,6 +144,14 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
   driver_data->message_offset = message_offset;
   driver_data->message = message;
   driver_data->input_file_path = input_file_path;
+
+  log_timing_stage(driver_data, PACKET_BUFFER_INITIALIZED, 1);
+  if (build_packet_buffer(driver_data->message_data) != SUCCESS) {
+    LOG_ERROR("Failed to build packet buffer");
+    return GENERIC_ERROR;
+  }
+  log_timing_stage(driver_data, PACKET_BUFFER_INITIALIZED, 0);
+
   return SUCCESS;
 }
 
