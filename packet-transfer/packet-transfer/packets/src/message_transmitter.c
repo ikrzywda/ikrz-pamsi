@@ -3,10 +3,12 @@
 int init_message_data(MessageData *message_data, uint8_t *message,
                       size_t message_length, size_t max_packet_size) {
   if (!message_data || !message) {
+    LOG_ERROR("Invalid message data or message %p %p", message_data, message);
     return MEMORY_ERROR;
   }
 
   if (message_length == 0 || max_packet_size == 0) {
+    LOG_ERROR("Invalid message length or max packet size");
     return DATA_INTEGRITY_ERROR;
   }
 

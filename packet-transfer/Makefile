@@ -9,15 +9,19 @@ DEBUG_FLAGS = -g -fsanitize=address
 # Source files
 DRIVER_SRC = packet-transfer/driver/main.c \
 			 packet-transfer/driver/driver.c
+DRIVER_SRC = packet-transfer/driver/driver.h
 PACKET_SRC = packet-transfer/packets/src/message_transmitter.c \
+			 packet-transfer/packets/src/message_receiver.c \
              packet-transfer/packets/src/packet.c \
              packet-transfer/packets/src/stack.c
 COMMON_SRC = packet-transfer/common/src/env_logger.c \
 			 packet-transfer/common/src/logger.c
 
 # Object files
-DRIVER_OBJ = build/main.o
+DRIVER_OBJ = build/main.o \
+			 build/driver.o
 PACKET_OBJ = build/message_transmitter.o \
+			 build/message_receiver.o \
              build/packet.o \
              build/stack.o
 COMMON_OBJ = build/env_logger.o \
@@ -45,7 +49,11 @@ $(EXECUTABLE): $(DRIVER_OBJ) $(COMMON_OBJ) $(LIBRARY)
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Compiling the driver source file
-build/main.o: packet-transfer/driver/main.c packet-transfer/driver/driver.c packet-transfer/packets/include/* 
+build/%.o: packet-transfer/driver/%.c packet-transfer/packets/include/*  packet-transfer/common/include/*
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+# Compiling the driver source files
+build/%.o: packet-transfer/driver/%.c packet-transfer/driver/driver.h packet-transfer/packets/include/* packet-transfer/common/include/*
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Compiling the packet source files

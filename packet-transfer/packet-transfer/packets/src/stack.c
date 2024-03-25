@@ -97,6 +97,7 @@ int head_stack(Stack *stack, Packet *packet) {
   if (is_empty_stack(stack)) {
     return DATA_INTEGRITY_ERROR;
   }
-  *packet = stack->buffer[stack->size - 1];
+  unsigned int last_index = stack->size > 0 ? stack->size - 1 : 0;
+  *packet = stack->buffer[last_index];
   return SUCCESS;
 }

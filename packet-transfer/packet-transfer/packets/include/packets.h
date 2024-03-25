@@ -4,7 +4,6 @@
 #include "../src/message_receiver.h"
 #include "../src/message_transmitter.h"
 #include "../src/packet.h"
-#include "error.h"
 
 typedef ReceiverData ReceiverData;
 typedef MessageData MessageData;
