@@ -5,4 +5,4 @@
 #define MAX_PAYLOAD_SIZE 1024
 #define DEFAULT_STACK_CAPACITY 128
 
-#endif  // CONSTANTS_H
+#endif // CONSTANTS_H

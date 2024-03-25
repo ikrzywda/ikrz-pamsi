@@ -25,4 +25,6 @@ int init_packet(Packet* packet_ptr, size_t message_length,
                 size_t range_start, size_t range_end,
                 uint8_t* payload);
 
+int destroy_packet(Packet* packet_ptr);
+
 #endif  // PACKET_H

@@ -7,7 +7,8 @@ DEBUG_FLAGS = -g -fsanitize=address
 
 
 # Source files
-DRIVER_SRC = packet-transfer/driver/main.c
+DRIVER_SRC = packet-transfer/driver/main.c \
+			 packet-transfer/driver/driver.c
 PACKET_SRC = packet-transfer/packets/src/message_transmitter.c \
              packet-transfer/packets/src/packet.c \
              packet-transfer/packets/src/stack.c
@@ -44,7 +45,7 @@ $(EXECUTABLE): $(DRIVER_OBJ) $(COMMON_OBJ) $(LIBRARY)
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Compiling the driver source file
-build/main.o: packet-transfer/driver/main.c packet-transfer/packets/include/* 
+build/main.o: packet-transfer/driver/main.c packet-transfer/driver/driver.c packet-transfer/packets/include/* 
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 # Compiling the packet source files

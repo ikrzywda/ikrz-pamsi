@@ -1,4 +1,5 @@
 #include "common.h"
+#include "driver.h"
 #include "packets.h"
 
 #include <stdio.h>
@@ -19,13 +20,10 @@ int init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
   return SUCCESS;
 }
 
-int main(int argc, char **argv) { 
+int main(int argc, char **argv) {
   init_env_logger();
 
-  int status_code = LOG_DEBUG("Starting message transmitter");
-  if (status_code != SUCCESS) {
-    return status_code;
-  }
+  LOG_DEBUG("Starting message transmitter %s", "v1.0.0");
 
   return SUCCESS;
 }

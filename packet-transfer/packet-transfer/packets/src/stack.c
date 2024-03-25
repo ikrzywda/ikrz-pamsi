@@ -32,7 +32,8 @@ int push_stack(Stack *stack, Packet packet) {
   if (!stack) {
     return MEMORY_ERROR;
   }
-  if (stack->size == stack->capacity && increase_stack_capacity(stack) != SUCCESS) {
+  if (stack->size == stack->capacity &&
+      increase_stack_capacity(stack) != SUCCESS) {
     return MEMORY_ERROR;
   }
   stack->buffer[stack->size] = packet;
@@ -64,7 +65,8 @@ int increase_stack_capacity(Stack *stack) {
     return MEMORY_ERROR;
   }
   unsigned int new_capacity = stack->capacity * 2;
-  Packet *new_buffer = (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
+  Packet *new_buffer =
+      (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
   if (!new_buffer) {
     return MEMORY_ERROR;
   }
@@ -78,7 +80,8 @@ int decrease_stack_capacity(Stack *stack) {
     return MEMORY_ERROR;
   }
   unsigned int new_capacity = stack->capacity / 2;
-  Packet *new_buffer = (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
+  Packet *new_buffer =
+      (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
   if (!new_buffer) {
     return MEMORY_ERROR;
   }

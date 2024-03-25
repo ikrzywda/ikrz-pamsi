@@ -1,43 +1,27 @@
 #include "message_transmitter.h"
 
-int init_message_data(MessageData *message_data, const char *input_file_path,
-                      size_t max_packet_size) {
-  if (!message_data) {
+int init_message_data(MessageData *message_data, uint8_t *message,
+                      size_t message_length, size_t max_packet_size) {
+  if (!message_data || !message) {
     return MEMORY_ERROR;
   }
-  if (!input_file_path || sizeof(input_file_path) == 0 ||
-      sizeof(input_file_path) > MAX_PATH_LENGTH || max_packet_size == 0 ||
-      max_packet_size > MAX_PAYLOAD_SIZE) {
+
+  if (message_length == 0 || max_packet_size == 0) {
     return DATA_INTEGRITY_ERROR;
   }
 
-  FILE *input_file = fopen(input_file_path, "rb");
-  if (!input_file) {
-    return FILE_ERROR;
-  }
-
-  fseek(input_file, 0, SEEK_END);
-  long file_size = ftell(input_file);
-  fseek(input_file, 0, SEEK_SET);
-
-  if (file_size > MAX_PAYLOAD_SIZE) {
-    fclose(input_file);
-    return DATA_INTEGRITY_ERROR;
-  }
-
-  size_t packet_count = file_size / max_packet_size;
-  if (file_size % max_packet_size != 0) {
+  size_t packet_count = message_length / max_packet_size;
+  if (message_length % max_packet_size != 0) {
     packet_count = packet_count + 1;
   }
 
   Packet *packet_buffer = (Packet *)malloc(packet_count * sizeof(Packet));
   if (!packet_buffer) {
-    fclose(input_file);
     return MEMORY_ERROR;
   }
 
-  message_data->input_file = input_file;
-  message_data->message_size = file_size;
+  message_data->message = message;
+  message_data->message_size = message_length;
   message_data->max_packet_size = max_packet_size;
   message_data->packet_count = packet_count;
   message_data->packet_buffer = packet_buffer;
@@ -67,10 +51,10 @@ int build_packet_buffer(MessageData *message_data) {
     if (!payload) {
       return MEMORY_ERROR;
     }
-    if (fread(payload, 1, payload_size, message_data->input_file) !=
-        payload_size) {
+    if (memcpy(payload, message_data->message + packet_range_start,
+               payload_size) != payload) {
       free(payload);
-      return FILE_ERROR;
+      return GENERIC_ERROR;
     }
     Packet *packet_ptr = &message_data->packet_buffer[i];
     if (init_packet(packet_ptr, message_data->message_size, packet_range_start,
@@ -87,8 +71,12 @@ int destroy_message_data(MessageData *message_data) {
   if (!message_data) {
     return MEMORY_ERROR;
   }
-  if (fclose(message_data->input_file) == EOF) {
-    return FILE_ERROR;
+  for (unsigned int i = 0; i < message_data->packet_count; i++) {
+    Packet *packet_ptr = &message_data->packet_buffer[i];
+    if (destroy_packet(packet_ptr) != SUCCESS) {
+      LOG_ERROR("Failed to destroy packet %d", i);
+      return GENERIC_ERROR;
+    }
   }
   return SUCCESS;
 }
