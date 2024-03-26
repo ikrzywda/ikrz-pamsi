@@ -1,6 +1,6 @@
 #include "packet.h"
 
-int init_packet(Packet *packet_ptr, const PacketType type,
+int packet_init(Packet *packet_ptr, const PacketType type,
                 const size_t message_length, const size_t offset,
                 const size_t payload_length, const uint8_t *payload) {
   if (!packet_ptr || !payload) {
@@ -25,7 +25,7 @@ int init_packet(Packet *packet_ptr, const PacketType type,
   return SUCCESS;
 }
 
-int destroy_packet(Packet *packet_ptr) {
+int packet_destroy(Packet *packet_ptr) {
   if (!packet_ptr) {
     return MEMORY_ERROR;
   }
@@ -34,5 +34,14 @@ int destroy_packet(Packet *packet_ptr) {
   packet_ptr->message_length = 0;
   packet_ptr->offset = 0;
   packet_ptr->length = 0;
+  return SUCCESS;
+}
+
+int packet_copy(Packet *destination, const Packet *source) {
+  if (!destination || !source) {
+    return MEMORY_ERROR;
+  }
+
+  memcpy(destination, source, sizeof(Packet));
   return SUCCESS;
 }

@@ -14,7 +14,7 @@ int init_transmitter_data(TransmitterData *transmitter_data,
     return DATA_INTEGRITY_ERROR;
   }
 
-  if (init_packet_buffer(&transmitter_data->packet_buffer, message,
+  if (packet_init_buffer(&transmitter_data->packet_buffer, message,
                          message_length, max_packet_length) != SUCCESS) {
     return MEMORY_ERROR;
   }
@@ -29,10 +29,10 @@ int destroy_transmitter_data(TransmitterData *transmitter_data) {
   if (!transmitter_data) {
     return MEMORY_ERROR;
   }
-  return destroy_packet_buffer(&transmitter_data->packet_buffer);
+  return packet_destroy_buffer(&transmitter_data->packet_buffer);
 }
 
-int init_packet_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
+int packet_init_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
                        const size_t message_length,
                        const size_t max_packet_length) {
 
@@ -69,7 +69,7 @@ int init_packet_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
       status_code = RANGE_ERROR;
       break;
     }
-    if (init_packet(packet, DATA, message_length, offset, packet_length,
+    if (packet_init(packet, DATA, message_length, offset, packet_length,
                     message) != SUCCESS) {
       status_code = MEMORY_ERROR;
       break;
@@ -79,7 +79,7 @@ int init_packet_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
 
   if (status_code != SUCCESS) {
     for (unsigned i = 0; i < allocated_packet_count; i++) {
-      destroy_packet(&packets[i]);
+      packet_destroy(&packets[i]);
     }
     free(packets);
   }
@@ -88,13 +88,13 @@ int init_packet_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
   return status_code;
 }
 
-int destroy_packet_buffer(PacketBuffer *packet_buffer) {
+int packet_destroy_buffer(PacketBuffer *packet_buffer) {
   if (!packet_buffer) {
     return MEMORY_ERROR;
   }
   int status_code = SUCCESS;
   for (int i = 0; i < packet_buffer->length; i++) {
-    if (destroy_packet(&packet_buffer->buffer[i]) != SUCCESS) {
+    if (packet_destroy(&packet_buffer->buffer[i]) != SUCCESS) {
       LOG_ERROR("Failed to destroy packet");
       status_code = MEMORY_ERROR;
     }

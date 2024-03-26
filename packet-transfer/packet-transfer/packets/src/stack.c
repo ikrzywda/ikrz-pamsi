@@ -1,7 +1,9 @@
 #include "stack.h"
 
-int stack_init(Stack *const stack, const unsigned int capacity) {
-  if (!stack) {
+int stack_init(Stack *const stack, const unsigned int capacity,
+               DestroyItemCallback destroy_item_callback,
+               CopyItemCallback copy_item_callback) {
+  if (!stack || !destroy_item_callback || !copy_item_callback) {
     return MEMORY_ERROR;
   }
   if (capacity == 0) {
@@ -15,6 +17,8 @@ int stack_init(Stack *const stack, const unsigned int capacity) {
   stack->capacity = capacity;
   stack->head_index = 0;
   stack->data_buffer = buffer;
+  stack->destroy_item_callback = destroy_item_callback;
+  stack->copy_item_callback = copy_item_callback;
   return SUCCESS;
 }
 
@@ -73,7 +77,7 @@ int stack_pop_item(Stack *const stack, void **const item) {
   }
   int status_code = SUCCESS;
   void *head_item = stack->data_buffer[stack->head_index];
-  if ((status_code = stack->copy_item_callback(head_item, *item)) != SUCCESS) {
+  if ((status_code = stack->copy_item_callback(*item, head_item)) != SUCCESS) {
     return status_code;
   }
   if ((status_code = stack->destroy_item_callback(head_item)) != SUCCESS) {

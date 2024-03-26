@@ -37,10 +37,10 @@ int transmit_messages(Packet *packet_buffer, uint8_t *message, unsigned int pack
 
     for (int i = 1; i < message_count + 1; i++) {
         if (i == message_count - 1) {
-            packet_buffer[i - 1] = init_packet(message[(i - 1) * p : i * p + message_length % packet_count]);
+            packet_buffer[i - 1] = packet_init(message[(i - 1) * p : i * p + message_length % packet_count]);
             continue;
         }
-        packet_buffer[i - 1] = init_packet(message[(i - 1) * p : i * p + message_length % packet_count]);
+        packet_buffer[i - 1] = packet_init(message[(i - 1) * p : i * p + message_length % packet_count]);
     }
 
     return 0;
@@ -76,18 +76,18 @@ typedef struct {
   Packet *buffer;
 } Stack;
 
-int _assemble_message(Stack *packet_stack, uint8_t *message) {
+int _receiver_assemble_message(Stack *packet_stack, uint8_t *message) {
     for (int i = 0; i < packet_stack.size, i++) {
         memcpy(message + packet.range_start, &packet.payload, packet.range_end - packet.range_start);
     }
     return 0;
 }
 
-int assemble_message(uint8_t *message) {
+int receiver_assemble_message(uint8_t *message) {
     Stack packet_stack;
     bool is_initialized = false;
     // załozenie, ze receive message odbiera wiadomość
-    for (packet in receive_packet()) {
+    for (packet in receiver_receive_packet()) {
         if (packet.type == START && !is_initialized) {
             init_stack(&packet_stack, capacity=packet.message_length);
             message = malloc(packet.message_length);
@@ -100,7 +100,7 @@ int assemble_message(uint8_t *message) {
             packet_stack.push(packet);
         }
         if (packet.type == END) {
-            return _assemble_message(packet_stack, message);
+            return _receiver_assemble_message(packet_stack, message);
         }
     }
 }

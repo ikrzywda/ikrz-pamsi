@@ -1,30 +1,30 @@
 #include "message_receiver.h"
 
-int init_receiver_data(ReceiverData *receiver_data_ptr) {
-  if (!receiver_data_ptr) {
-    LOG_ERROR("Receiver data pointer is NULL");
+int receiver_init(ReceiverData const *receiver_data) {
+  if (!receiver_data) {
     return MEMORY_ERROR;
   }
+  int status_code =
+      stack_init(&receiver_data->packet_stack, DEFAULT_PACKET_STACK_CAPACITY,
+                 packet_destroy, packet_copy);
+  if (status_code != SUCCESS) {
+    return status_code;
+  }
 
-  if (init_stack(&receiver_data_ptr->packet_stack, DEFAULT_STACK_CAPACITY) !=
-      SUCCESS) {
-    LOG_ERROR("Failed to initialize packet stack");
+  return SUCCESS;
+}
+
+int receiver_destroy(ReceiverData *receiver_data_ptr) {
+  if (!receiver_data_ptr) {
+    return MEMORY_ERROR;
+  }
+  if (stack_destroy(&receiver_data_ptr->packet_stack) != SUCCESS) {
     return MEMORY_ERROR;
   }
   return SUCCESS;
 }
 
-int destroy_receiver_data(ReceiverData *receiver_data_ptr) {
-  if (!receiver_data_ptr) {
-    return MEMORY_ERROR;
-  }
-  if (destroy_stack(&receiver_data_ptr->packet_stack) != SUCCESS) {
-    return MEMORY_ERROR;
-  }
-  return SUCCESS;
-}
-
-int receive_packet(ReceiverData *receiver_data_ptr, Packet packet) {
+int receiver_receive_packet(ReceiverData *receiver_data_ptr, Packet packet) {
   if (!receiver_data_ptr) {
     return MEMORY_ERROR;
   }
@@ -34,8 +34,8 @@ int receive_packet(ReceiverData *receiver_data_ptr, Packet packet) {
   return SUCCESS;
 }
 
-int assemble_message(uint8_t *output_message_buffer_ptr,
-                     ReceiverData *receiver_data) {
+int receiver_assemble_message(uint8_t *output_message_buffer_ptr,
+                              ReceiverData *receiver_data) {
   if (!output_message_buffer_ptr || !receiver_data) {
     LOG_ERROR("Output message buffer or receiver data is NULL, %p, %p",
               output_message_buffer_ptr, receiver_data);

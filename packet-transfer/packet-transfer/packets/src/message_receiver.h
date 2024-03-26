@@ -1,25 +1,32 @@
-#ifndef MESSAGE_RECEIVER_H
-#define MESSAGE_RECEIVER_H
+#pragma once 
 
 #include "common.h"
 #include "stack.h"
 
 #include <stdio.h>
 
+#define DEFAULT_PACKET_STACK_CAPACITY 128
+
 typedef enum ReceiverState {
-  RECEIVER_INITIALIZED,
-  RECEIVER_PACKET_BUFFER_READY,
-  RECEIVER_PACKET_BUFFER_DESERIALIZED,
+  RECEIVER_STATE_AWAITING,
+  RECEIVER_STATE_RECEIVING,
+  RECEIVER_STATE_READY,
 } ReceiverState;
 
 typedef struct {
   Stack packet_stack;
+  ReceiverState state;
 } ReceiverData;
 
-int init_receiver_data(ReceiverData *receiver_data);
-int destroy_receiver_data(ReceiverData *receiver_data);
+/**
+ * Initialize receiver data
+ * 
+ * @param receiver_data pointer to receiver data
+ * @return status code
+*/
+int receiver_init(ReceiverData const* receiver_data);
+int receiver_destroy(ReceiverData *receiver_data);
 
-int receive_packet(ReceiverData *receiver_data, Packet packet);
-int assemble_message(uint8_t *output_message_buffer_ptr, ReceiverData *receiver_data);
+int receiver_receive_packet(ReceiverData const* receiver_data, Packet packet);
+int receiver_assemble_message(uint8_t const* output_message_buffer_ptr, const ReceiverData *receiver_data);
 
-#endif  // MESSAGE_RECEIVER_H

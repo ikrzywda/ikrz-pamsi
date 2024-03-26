@@ -17,10 +17,10 @@ typedef int (*DestroyItemCallback)(void*);
 /**
  * Copy callback
  * 
- * @param source
  * @param destination
+ * @param source
 */
-typedef int (*CopyItemCallback)(void*, void*);
+typedef int (*CopyItemCallback)(void*, const void*);
 typedef struct {
   int head_index;
   unsigned int capacity;
@@ -34,9 +34,11 @@ typedef struct {
  * 
  * @param stack pointer to an already allocated memory address
  * @param capacity desired starting capacity of the stack
+ * @param destroy_item_callback callback for destroying item
+ * @param copy_item_callback callback for copying item
  * @return status code
 */
-int stack_init(Stack *const stack, const unsigned int capacity);
+int stack_init(Stack *const stack, const unsigned int capacity, DestroyItemCallback destroy_item_callback, CopyItemCallback copy_item_callback);
 
 /**
  * Destroy stack

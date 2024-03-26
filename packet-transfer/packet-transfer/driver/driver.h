@@ -46,7 +46,7 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path,
                      int message_offset);
 int log_timing_stage(DriverData *driver_data, TimingStage stage, int start);
 int send_packets_in_random_order(DriverData *driver_data);
-int reassemble_message(DriverData *driver_data);
+int rereceiver_assemble_message(DriverData *driver_data);
 
 int benchmark(DriverData *driver_data);
 int output_report(DriverData *driver_data);

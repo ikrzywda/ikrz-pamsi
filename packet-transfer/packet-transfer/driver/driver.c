@@ -126,7 +126,7 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
   }
 
 
-  if (init_receiver_data(driver_data->receiver_data) != SUCCESS) { 
+  if (receiver_init(driver_data->receiver_data) != SUCCESS) { 
     LOG_ERROR("Failed to initialize receiver data");
     return GENERIC_ERROR;
   }
@@ -146,7 +146,7 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
   driver_data->input_file_path = input_file_path;
 
   log_timing_stage(driver_data, PACKET_BUFFER_INITIALIZED, 1);
-  if (init_packet_buffer(driver_data->transmitter_data) != SUCCESS) {
+  if (packet_init_buffer(driver_data->transmitter_data) != SUCCESS) {
     LOG_ERROR("Failed to build packet buffer");
     return GENERIC_ERROR;
   }
@@ -164,7 +164,7 @@ int benchmark(DriverData *driver_data) {
     return GENERIC_ERROR;
   }
 
-  if (reassemble_message(driver_data) != SUCCESS) {
+  if (rereceiver_assemble_message(driver_data) != SUCCESS) {
     LOG_ERROR("Failed to reassemble message");
     return GENERIC_ERROR;
   }
@@ -207,7 +207,7 @@ int send_packets_in_random_order(DriverData *driver_data) {
   log_timing_stage(driver_data, PACKET_BUFFER_RECEIVED, 1);
   for (unsigned int i = 0; i < packet_count; i++) {
     Packet *packet = &driver_data->transmitter_data->packet_buffer[indices[i]];
-    if (receive_packet(driver_data->receiver_data, *packet) != SUCCESS) {
+    if (receiver_receive_packet(driver_data->receiver_data, *packet) != SUCCESS) {
       free(indices);
       LOG_ERROR("Failed to receive packet %d; aborting", i);
       return GENERIC_ERROR;
@@ -218,7 +218,7 @@ int send_packets_in_random_order(DriverData *driver_data) {
   return SUCCESS;
 }
 
-int reassemble_message(DriverData *driver_data) {
+int rereceiver_assemble_message(DriverData *driver_data) {
   if (!driver_data) {
     LOG_ERROR("Driver data is NULL");
     return MEMORY_ERROR;
@@ -232,7 +232,7 @@ int reassemble_message(DriverData *driver_data) {
   }
 
   log_timing_stage(driver_data, MESSAGE_REASSEMBLED, 1);
-  if (assemble_message(output_message_buffer, driver_data->receiver_data) !=
+  if (receiver_assemble_message(output_message_buffer, driver_data->receiver_data) !=
       SUCCESS) {
     LOG_ERROR("Failed to assemble message");
     free(output_message_buffer);
