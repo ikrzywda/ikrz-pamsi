@@ -6,8 +6,8 @@
 #include "../src/packet.h"
 
 typedef ReceiverData ReceiverData;
-typedef MessageData MessageData;
+typedef TransmitterData TransmitterData;
 typedef Packet Packet;
-typedef MessageDataState MessageDataState;
+typedef TransmitterDataState TransmitterDataState;
 
 #endif // PACKETS_H

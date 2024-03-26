@@ -1,29 +1,93 @@
-#ifndef STACK_H
-#define STACK_H
+#pragma once
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 #include "common.h"
 #include "packet.h"
 
+/**
+ * Destroy callback
+ * 
+ * @param item pointer to item
+*/
+typedef int (*DestroyItemCallback)(void*);
+
+/**
+ * Copy callback
+ * 
+ * @param source
+ * @param destination
+*/
+typedef int (*CopyItemCallback)(void*, void*);
 typedef struct {
-  unsigned int size;
+  int head_index;
   unsigned int capacity;
-  Packet *buffer;
+  void **data_buffer;
+  DestroyItemCallback destroy_item_callback;
+  CopyItemCallback copy_item_callback;
 } Stack;
 
-int init_stack(Stack *stack, unsigned int capacity);
-int destroy_stack(Stack *stack);
+/**
+ * Initialize stack
+ * 
+ * @param stack pointer to an already allocated memory address
+ * @param capacity desired starting capacity of the stack
+ * @return status code
+*/
+int stack_init(Stack *const stack, const unsigned int capacity);
 
-int push_stack(Stack *stack, Packet packet);
-int pop_stack(Stack *stack, Packet *packet);
+/**
+ * Destroy stack
+ * 
+ * @param stack pointer to a stack
+ * @return status code
+*/
+int stack_clear(Stack *const stack);
 
-int is_empty_stack(Stack *stack);
+/**
+ * Free dynamically allocated stack
+ * 
+ * @param[inout] stack pointer to a stack
+ * @return status code
+ * 
+*/
+int stack_destroy(Stack *stack);
 
-int increase_stack_capacity(Stack *stack);
-int decrease_stack_capacity(Stack *stack);
+/**
+ * Push item to stack
+ * 
+ * @param stack pointer to a stack
+ * @param item pointer to an item to be pushed to a stack -- stack takes ownership of the item
+ * @return status code
+*/
+int stack_push_item(Stack *const stack, const void *item);
 
-int head_stack(Stack *stack, Packet *packet);
+/**
+ * Pop item from stack
+ * 
+ * @param stack pointer to a stack
+ * @param[out] item pointer to which assign a borrowed value of a pointer to head item
+ * @return status code
+*/
+int stack_pop_item(Stack *const stack, void **const item);
 
-#endif  // STACK_H
+/**
+ * Retrieve head element of a stack
+ * 
+ * @param stack pointer to a stack
+ * @param[out] item pointer to which copy contents of head object
+ * @return status code
+*/
+int stack_head(Stack *const stack, void **item);
+
+/**
+ * Retrieve head element of a stack
+ * 
+ * @param stack pointer to a stack
+ * @param[out] item pointer to result value
+ * @return status code
+*/
+int stack_is_empty(Stack *const stack, bool *value);
+

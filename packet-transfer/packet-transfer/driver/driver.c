@@ -119,8 +119,8 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
     return MEMORY_ERROR;
   }
 
-  driver_data->message_data = (MessageData *)malloc(sizeof(MessageData));
-  if (!driver_data->message_data) {
+  driver_data->transmitter_data = (TransmitterData *)malloc(sizeof(TransmitterData));
+  if (!driver_data->transmitter_data) {
     LOG_ERROR("Failed to allocate memory for message data");
     return MEMORY_ERROR;
   }
@@ -134,7 +134,7 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
   LOG_DEBUG("Initializing message data with message length %zu and part length %zu",
             message_length, part_length);
 
-  if (init_message_data(driver_data->message_data, message, message_length, part_length) != SUCCESS){ 
+  if (init_transmitter_data(driver_data->transmitter_data, message, message_length, part_length) != SUCCESS){ 
     LOG_ERROR("Failed to initialize message data");
     return GENERIC_ERROR;
   }
@@ -146,7 +146,7 @@ int init_driver_data(DriverData *driver_data, const char *input_file_path, size_
   driver_data->input_file_path = input_file_path;
 
   log_timing_stage(driver_data, PACKET_BUFFER_INITIALIZED, 1);
-  if (build_packet_buffer(driver_data->message_data) != SUCCESS) {
+  if (init_packet_buffer(driver_data->transmitter_data) != SUCCESS) {
     LOG_ERROR("Failed to build packet buffer");
     return GENERIC_ERROR;
   }
@@ -193,7 +193,7 @@ int send_packets_in_random_order(DriverData *driver_data) {
     return MEMORY_ERROR;
   }
 
-  unsigned int packet_count = driver_data->message_data->packet_count;
+  unsigned int packet_count = driver_data->transmitter_data->packet_count;
   int *indices = (int *)malloc(packet_count * sizeof(int));
   if (!indices) {
     return MEMORY_ERROR;
@@ -206,7 +206,7 @@ int send_packets_in_random_order(DriverData *driver_data) {
 
   log_timing_stage(driver_data, PACKET_BUFFER_RECEIVED, 1);
   for (unsigned int i = 0; i < packet_count; i++) {
-    Packet *packet = &driver_data->message_data->packet_buffer[indices[i]];
+    Packet *packet = &driver_data->transmitter_data->packet_buffer[indices[i]];
     if (receive_packet(driver_data->receiver_data, *packet) != SUCCESS) {
       free(indices);
       LOG_ERROR("Failed to receive packet %d; aborting", i);

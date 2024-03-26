@@ -1,104 +1,117 @@
 #include "stack.h"
 
-int init_stack(Stack *stack, unsigned int capacity) {
+int stack_init(Stack *const stack, const unsigned int capacity) {
   if (!stack) {
     return MEMORY_ERROR;
   }
   if (capacity == 0) {
-    return DATA_INTEGRITY_ERROR;
+    return INVALID_ARGUMENTS;
   }
-  Packet *packet_buffer = (Packet *)malloc(capacity * sizeof(Packet));
-  if (!packet_buffer) {
+
+  void **buffer = (void **)malloc(sizeof(void *) * capacity);
+  if (!buffer) {
     return MEMORY_ERROR;
   }
   stack->capacity = capacity;
-  stack->size = 0;
-  stack->buffer = packet_buffer;
+  stack->head_index = 0;
+  stack->data_buffer = buffer;
   return SUCCESS;
 }
 
-int destroy_stack(Stack *stack) {
+int stack_clear(Stack *const stack) {
   if (!stack) {
     return MEMORY_ERROR;
   }
-  for (size_t i = 0; i < stack->size; i++) {
-    free(stack->buffer[i].payload);
+  for (int i = 0; i < stack->head_index; i++) {
+    void *item = stack->data_buffer[i];
+    if (stack->destroy_item_callback(item) != SUCCESS) {
+      LOG_ERROR("Failed deallocating stack item at index %d", i);
+    }
   }
-  free(stack->buffer);
+
+  free(stack->data_buffer);
+  stack->capacity = 0;
+  stack->head_index = -1;
   return SUCCESS;
 }
 
-int push_stack(Stack *stack, Packet packet) {
+int stack_destroy(Stack *stack) {
+  int status_code = stack_clear(stack);
+  if (status_code != SUCCESS) {
+    return status_code;
+  }
+  free(stack);
+  return SUCCESS;
+}
+
+int stack_push_item(Stack *const stack, const void *item) {
   if (!stack) {
     return MEMORY_ERROR;
   }
-  if (stack->size == stack->capacity &&
-      increase_stack_capacity(stack) != SUCCESS) {
-    return MEMORY_ERROR;
+  unsigned int new_head_index = stack->head_index + 1;
+  if (new_head_index >= stack->capacity) {
+    size_t new_capacity = stack->capacity * 2;
+    stack->data_buffer =
+        (void **)realloc(stack->data_buffer, sizeof(void *) * new_capacity);
+    if (!stack->data_buffer) {
+      return MEMORY_ERROR;
+    }
+    stack->capacity = new_capacity;
   }
-  stack->buffer[stack->size] = packet;
-  stack->size = stack->size + 1;
+
+  stack->data_buffer[new_head_index] = item;
+  stack->head_index = new_head_index;
   return SUCCESS;
 }
 
-int pop_stack(Stack *stack, Packet *packet) {
-  if (!stack || !packet) {
+int stack_pop_item(Stack *const stack, void **const item) {
+  if (!stack || !item) {
     return MEMORY_ERROR;
   }
-  if (is_empty_stack(stack)) {
-    return DATA_INTEGRITY_ERROR;
+  if (stack->head_index == -1) {
+    return RANGE_ERROR;
   }
-  *packet = stack->buffer[stack->size - 1];
-  stack->size = stack->size - 1;
-  print_packet(packet);
+  int status_code = SUCCESS;
+  void *head_item = stack->data_buffer[stack->head_index];
+  if ((status_code = stack->copy_item_callback(head_item, *item)) != SUCCESS) {
+    return status_code;
+  }
+  if ((status_code = stack->destroy_item_callback(head_item)) != SUCCESS) {
+    return status_code;
+  }
+
+  stack->head_index -= 1;
+
+  if (stack->head_index < stack->capacity / 2) {
+    size_t new_capacity = stack->capacity / 2;
+    stack->data_buffer =
+        (void **)realloc(stack->data_buffer, sizeof(void *) * new_capacity);
+    if (!stack->data_buffer) {
+      return MEMORY_ERROR;
+    }
+  }
   return SUCCESS;
 }
 
-int is_empty_stack(Stack *stack) {
+int stack_head(Stack *const stack, void **item) {
+  if (!stack || !item) {
+    return MEMORY_ERROR;
+  }
+  if (stack->head_index == -1) {
+    return RANGE_ERROR;
+  }
+
+  void *head_item = stack->data_buffer[stack->head_index];
+  *item = head_item;
+
+  return SUCCESS;
+}
+
+int stack_is_empty(Stack *const stack, bool *value) {
   if (!stack) {
     return MEMORY_ERROR;
   }
-  return stack->size == 0;
-}
 
-int increase_stack_capacity(Stack *stack) {
-  if (!stack) {
-    return MEMORY_ERROR;
-  }
-  unsigned int new_capacity = stack->capacity * 2;
-  Packet *new_buffer =
-      (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
-  if (!new_buffer) {
-    return MEMORY_ERROR;
-  }
-  stack->buffer = new_buffer;
-  stack->capacity = new_capacity;
-  return SUCCESS;
-}
-
-int decrease_stack_capacity(Stack *stack) {
-  if (!stack) {
-    return MEMORY_ERROR;
-  }
-  unsigned int new_capacity = stack->capacity / 2;
-  Packet *new_buffer =
-      (Packet *)realloc(stack->buffer, new_capacity * sizeof(Packet));
-  if (!new_buffer) {
-    return MEMORY_ERROR;
-  }
-  stack->buffer = new_buffer;
-  stack->capacity = new_capacity;
-  return SUCCESS;
-}
-
-int head_stack(Stack *stack, Packet *packet) {
-  if (!stack || !packet) {
-    return MEMORY_ERROR;
-  }
-  if (is_empty_stack(stack)) {
-    return DATA_INTEGRITY_ERROR;
-  }
-  unsigned int last_index = stack->size > 0 ? stack->size - 1 : 0;
-  *packet = stack->buffer[last_index];
+  *value = stack->head_index == -1;
   return SUCCESS;
 }

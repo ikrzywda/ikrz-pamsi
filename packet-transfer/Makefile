@@ -36,7 +36,7 @@ EXECUTABLE = build/packet-transfer
 
 # clang-format
 CLANG_FORMAT = clang-format
-FORMAT_FLAGS = -i -style=file
+FORMAT_FLAGS = -i -style=llvm
 
 # Build target
 all: $(EXECUTABLE)

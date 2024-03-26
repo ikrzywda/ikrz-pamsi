@@ -12,20 +12,25 @@ typedef enum {
   INITIALIZED,
   PACKET_BUFFER_READY,
   PACKET_BUFFER_SERIALIZED,
-} MessageDataState;
+} TransmitterDataState;
 
 typedef struct {
-  uint8_t *message;
-  Packet *packet_buffer;
-  size_t message_size;
-  size_t max_packet_size;
-  unsigned int packet_count;
-  MessageDataState state;
-} MessageData;
+  unsigned int length;
+  Packet *buffer;
+} PacketBuffer;
 
-int init_message_data(MessageData *message_data, uint8_t *message, size_t message_length,
-                      size_t max_packet_size);
-int build_packet_buffer(MessageData *message_data);
-int destroy_message_data(MessageData *message_data);
+typedef struct {
+  PacketBuffer packet_buffer;
+  TransmitterDataState state;
+  size_t message_length;
+  size_t max_packet_length;
+} TransmitterData;
+
+int init_transmitter_data(TransmitterData *transmitter_data, uint8_t *message, size_t message_length,
+                      size_t max_packet_length);
+
+int init_packet_buffer(PacketBuffer *packet_buffer, const uint8_t *message, const size_t message_length, const size_t max_packet_length);
+int destroy_packet_buffer(PacketBuffer *packet_buffer);
+int destroy_transmitter_data(TransmitterData *transmitter_data);
 
 #endif  // MESSAGE_TRANSIMITTER_H

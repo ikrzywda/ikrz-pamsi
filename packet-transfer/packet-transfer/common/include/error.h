@@ -9,5 +9,7 @@
 #define INVALID_PACKET_ERROR 4
 #define FILE_ERROR 5
 #define INVALID_ARGUMENTS 6
+#define RANGE_ERROR 7
+#define NO_DATA_ERROR 8
 
 #endif // ERROR_H

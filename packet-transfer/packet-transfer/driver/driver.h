@@ -25,7 +25,7 @@ typedef enum {
 
 typedef struct {
   ReceiverData *receiver_data;
-  MessageData *message_data;
+  TransmitterData *transmitter_data;
   const char *input_file_path;
   uint8_t *message;
   time_t stage_started_times[STAGE_COUNT];
