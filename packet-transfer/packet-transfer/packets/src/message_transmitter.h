@@ -26,10 +26,11 @@ typedef struct {
   size_t max_packet_length;
 } TransmitterData;
 
-int init_transmitter_data(TransmitterData *transmitter_data, uint8_t *message, size_t message_length,
-                      size_t max_packet_length);
+int init_transmitter_data(TransmitterData *transmitter_data, const uint8_t *message, const size_t message_length,
+                      const size_t max_packet_length);
 
-int packet_init_buffer(PacketBuffer *packet_buffer, const uint8_t *message, const size_t message_length, const size_t max_packet_length);
+int packet_init_buffer(PacketBuffer *packet_buffer, const uint8_t *message, 
+                    const size_t message_length, const size_t max_packet_length);
 int packet_destroy_buffer(PacketBuffer *packet_buffer);
 int destroy_transmitter_data(TransmitterData *transmitter_data);
 

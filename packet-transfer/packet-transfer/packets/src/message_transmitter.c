@@ -54,6 +54,8 @@ int packet_init_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
     return MEMORY_ERROR;
   }
 
+  uint8_t *payload_buffer = (uint8_t *)malloc(max_packet_length);
+
   int status_code = SUCCESS;
   unsigned int allocated_packet_count = 0;
   for (unsigned int i; i < packet_count; i++) {
@@ -69,8 +71,9 @@ int packet_init_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
       status_code = RANGE_ERROR;
       break;
     }
+    payload_buffer = message + offset;
     if (packet_init(packet, DATA, message_length, offset, packet_length,
-                    message) != SUCCESS) {
+                    payload_buffer) != SUCCESS) {
       status_code = MEMORY_ERROR;
       break;
     }
@@ -93,7 +96,7 @@ int packet_destroy_buffer(PacketBuffer *packet_buffer) {
     return MEMORY_ERROR;
   }
   int status_code = SUCCESS;
-  for (int i = 0; i < packet_buffer->length; i++) {
+  for (unsigned int i = 0; i < packet_buffer->length; i++) {
     if (packet_destroy(&packet_buffer->buffer[i]) != SUCCESS) {
       LOG_ERROR("Failed to destroy packet");
       status_code = MEMORY_ERROR;

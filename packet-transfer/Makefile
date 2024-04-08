@@ -9,7 +9,6 @@ DEBUG_FLAGS = -g -fsanitize=address
 # Source files
 DRIVER_SRC = packet-transfer/driver/main.c \
 			 packet-transfer/driver/driver.c
-DRIVER_SRC = packet-transfer/driver/driver.h
 PACKET_SRC = packet-transfer/packets/src/message_transmitter.c \
 			 packet-transfer/packets/src/message_receiver.c \
              packet-transfer/packets/src/packet.c \

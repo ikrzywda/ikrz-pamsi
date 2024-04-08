@@ -9,6 +9,8 @@
 
 #define STAGE_COUNT 4
 
+#define DEFAULT_INPUT_FILE_PATH_ENV_VAR "INPUT_FILE"
+
 static const char *TIMING_STAGE_NAMES_STR[] = {
     "MESSAGE_GENERATED",
     "PACKET_BUFFER_INITIALIZED",
@@ -16,39 +18,29 @@ static const char *TIMING_STAGE_NAMES_STR[] = {
     "MESSAGE_REASSEMBLED",
 };
 
+
 typedef enum {
   MESSAGE_GENERATED = 0,
-  PACKET_BUFFER_INITIALIZED = 1,
-  PACKET_BUFFER_RECEIVED = 2,
-  MESSAGE_REASSEMBLED = 3,
+  PACKET_BUFFER_INITIALIZED,
+  PACKET_BUFFER_RECEIVED,
+  MESSAGE_REASSEMBLED,
 } TimingStage;
 
 typedef struct {
-  ReceiverData *receiver_data;
-  TransmitterData *transmitter_data;
-  const char *input_file_path;
-  uint8_t *message;
-  time_t stage_started_times[STAGE_COUNT];
-  time_t stage_finished_times[STAGE_COUNT];
   size_t message_length;
-  size_t part_length;
+  size_t part_size;
   int message_offset;
-} DriverData;
+  const char *input_file_path;
+} CallArguments;
 
-int randomize_indices(int *indices, size_t count, unsigned int iteration_count);
-int generate_message(uint8_t *message, const char *input_file_path,
-                     size_t message_length, int offset);
-int output_message(uint8_t *message, size_t message_length,
-                   const char *output_file_path);
+void print_report(const double *timed_stages);
+int init_call_arguments(CallArguments *call_arguments, int argc, char **argv);
+int generate_message(uint8_t const *message, const size_t message_length,
+                     const int offset, const char *input_file_path);
+int init_message_order_array(size_t *message_order_array, const size_t packet_buffer_length);
+int send_messages_in_random_order(PacketBuffer const* packet_buffer, size_t *message_order_array, ReceiverData *const receiver_data);
+int compare_messages(const uint8_t *message, const uint8_t *reassembled_message, const size_t message_length);
+int benchmark_call(const CallArguments *call_arguments);
 
-int init_driver_data(DriverData *driver_data, const char *input_file_path,
-                     size_t message_length, size_t part_length,
-                     int message_offset);
-int log_timing_stage(DriverData *driver_data, TimingStage stage, int start);
-int send_packets_in_random_order(DriverData *driver_data);
-int rereceiver_assemble_message(DriverData *driver_data);
-
-int benchmark(DriverData *driver_data);
-int output_report(DriverData *driver_data);
 
 #endif // DRIVER_H

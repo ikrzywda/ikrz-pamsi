@@ -1,282 +1,183 @@
 #include "driver.h"
 
-int output_message(uint8_t *message, size_t message_length, const char *output_file_path) {
-  if (!message) {
-    return MEMORY_ERROR;
+void print_report(const double *timed_stages) {
+  LOG_INFO("Benchmark report:");
+  for (size_t i = 0; i < STAGE_COUNT; i++) {
+    LOG_INFO("%s: %lf", TIMING_STAGE_NAMES_STR[i], timed_stages[i]);
   }
-
-  FILE *output_file = fopen(output_file_path, "wb");
-  if (!output_file) {
-    return FILE_ERROR;
-  }
-
-  if (fwrite(message, 1, message_length, output_file) != message_length) {
-    fclose(output_file);
-    return FILE_ERROR;
-  }
-  fclose(output_file);
-  return SUCCESS;
-
 }
 
-int log_timing_stage(DriverData *driver_data, TimingStage stage, int start) {
-  if (!driver_data) {
-    return MEMORY_ERROR;
+int init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
+  if (argc != 4) {
+    return INVALID_ARGUMENTS;
   }
 
-  if (start) {
-    time(&driver_data->stage_started_times[stage]);
+  if (getenv(DEFAULT_INPUT_FILE_PATH_ENV_VAR)) {
+    call_arguments->input_file_path = getenv(DEFAULT_INPUT_FILE_PATH_ENV_VAR);
   } else {
-    time(&driver_data->stage_finished_times[stage]);
+    LOG_ERROR("Input file path not found");
+    return INVALID_ARGUMENTS;
   }
+
+  call_arguments->message_length = atoi(argv[1]);
+  call_arguments->part_size = atoi(argv[2]);
+  call_arguments->message_offset = 0;
   return SUCCESS;
 }
 
-int generate_message(uint8_t *message, const char *input_file_path,
-                     size_t message_length, int offset) {
-
-  LOG_DEBUG("Generating message from input file %s with length %zu and offset %d",
-            input_file_path, message_length, offset);
+int generate_message(uint8_t const *message, const size_t message_length,
+                     const int offset, const char *input_file_path) {
   if (!message) {
-    LOG_ERROR("Message buffer is NULL");
     return MEMORY_ERROR;
   }
 
-  uint8_t *buffer = (uint8_t *)malloc(message_length);
-  if (!buffer) {
-    LOG_ERROR("Failed to allocate memory for message buffer");
-    return MEMORY_ERROR;
-  }
   FILE *input_file = fopen(input_file_path, "rb");
   if (!input_file) {
-    LOG_ERROR("Failed to open input file from path %s", input_file_path);
-    free(buffer);
-    return FILE_ERROR;
+    return MEMORY_ERROR;
   }
-
   fseek(input_file, 0, SEEK_END);
-  size_t page_size = ftell(input_file);
-  fseek(input_file, 0, SEEK_SET);
-
-  int page_count = 0;
-  page_count = message_length < page_size ? 1 : message_length / page_size;
-  if (page_count == 1) {
-    page_size = message_length;
-  } else if (page_count > 0 && page_size % message_length != 0) {
-    page_count = page_count + 1;
-  }
-
-  LOG_DEBUG("Message length: %zu bytes, page size: %zu bytes, page count: %d",
-            message_length, page_size, page_count);
-  uint8_t *page_buffer = (uint8_t *)malloc(page_size);
-  if (!page_buffer) {
+  size_t file_size = ftell(input_file);
+  fseek(input_file, offset, SEEK_SET);
+  uint8_t *buffer = (uint8_t *)malloc(message_length);
+  if (!buffer) {
     return MEMORY_ERROR;
   }
 
-  size_t bytes_read = 0;
-  if ((bytes_read = fread(page_buffer, 1, page_size, input_file)) != page_size) {
-    LOG_ERROR("Failed to read input file; read %zu bytes, expected %zu", bytes_read, page_size);
-    free(page_buffer);
-    fclose(input_file);
-    return FILE_ERROR;
+  if (fread(buffer, 1, message_length, input_file) != message_length) {
+    return GENERIC_ERROR;
   }
+
   fclose(input_file);
 
-  LOG_DEBUG("Read %zu bytes from input file", bytes_read);
-
-  for (int i = 0; i < page_count; i++) {
-    size_t offset = i * page_size;
-    LOG_DEBUG("Copying page %d to message buffer at offset %zu", i, offset);
-    memcpy(buffer + offset, page_buffer, page_size - 1);
-  }
-  free(page_buffer);
-  message = buffer;
-  return SUCCESS;
-}
-
-int init_driver_data(DriverData *driver_data, const char *input_file_path, size_t message_length,
-                     size_t part_length, int message_offset) {
-  LOG_DEBUG("Initializing driver data with message length %zu, part length %zu, and message offset %d",
-            message_length, part_length, message_offset);
-  uint8_t *message;
-  if (!driver_data) {
-    LOG_ERROR("Driver data is NULL");
-    return MEMORY_ERROR;
-  }
-
-  log_timing_stage(driver_data, MESSAGE_GENERATED, 1);
-  if (generate_message(message, input_file_path,
-                       message_length,
-                       message_offset) != SUCCESS) {
-    LOG_ERROR("Failed to generate message");
-    return GENERIC_ERROR;
-  }
-  log_timing_stage(driver_data, MESSAGE_GENERATED, 0);
-
-  driver_data->receiver_data = (ReceiverData *)malloc(sizeof(ReceiverData));
-  if (!driver_data->receiver_data) {
-    LOG_ERROR("Failed to allocate memory for receiver data");
-    return MEMORY_ERROR;
-  }
-
-  driver_data->transmitter_data = (TransmitterData *)malloc(sizeof(TransmitterData));
-  if (!driver_data->transmitter_data) {
-    LOG_ERROR("Failed to allocate memory for message data");
-    return MEMORY_ERROR;
-  }
-
-
-  if (receiver_init(driver_data->receiver_data) != SUCCESS) { 
-    LOG_ERROR("Failed to initialize receiver data");
-    return GENERIC_ERROR;
-  }
-
-  LOG_DEBUG("Initializing message data with message length %zu and part length %zu",
-            message_length, part_length);
-
-  if (init_transmitter_data(driver_data->transmitter_data, message, message_length, part_length) != SUCCESS){ 
-    LOG_ERROR("Failed to initialize message data");
-    return GENERIC_ERROR;
-  }
-
-  driver_data->message_length = message_length;
-  driver_data->part_length = part_length;
-  driver_data->message_offset = message_offset;
-  driver_data->message = message;
-  driver_data->input_file_path = input_file_path;
-
-  log_timing_stage(driver_data, PACKET_BUFFER_INITIALIZED, 1);
-  if (packet_init_buffer(driver_data->transmitter_data) != SUCCESS) {
-    LOG_ERROR("Failed to build packet buffer");
-    return GENERIC_ERROR;
-  }
-  log_timing_stage(driver_data, PACKET_BUFFER_INITIALIZED, 0);
+  memcpy(message, buffer, message_length);
 
   return SUCCESS;
 }
 
-int benchmark(DriverData *driver_data) {
-  
-  LOG_INFO("Benchmarking message transmission");
-
-  if (send_packets_in_random_order(driver_data) != SUCCESS) {
-    LOG_ERROR("Failed to send packets in random order");
-    return GENERIC_ERROR;
+int init_message_order_array(size_t *message_order_array,
+                             const size_t packet_buffer_length) {
+  if (!message_order_array) {
+    return MEMORY_ERROR;
   }
 
-  if (rereceiver_assemble_message(driver_data) != SUCCESS) {
-    LOG_ERROR("Failed to reassemble message");
-    return GENERIC_ERROR;
+  for (size_t i = 0; i < packet_buffer_length; i++) {
+    message_order_array[i] = i;
   }
 
-  char output_file_path[MAX_PATH_LENGTH];
-  snprintf(output_file_path, MAX_PATH_LENGTH, "%s.reassembled", driver_data->input_file_path);
-  FILE *output_file = fopen(output_file_path, "wb");
-  if (!output_file) {
-    return FILE_ERROR;
+  for (size_t i = 0; i < packet_buffer_length; i++) {
+    size_t j = rand() % packet_buffer_length;
+    size_t temp = message_order_array[i];
+    message_order_array[i] = message_order_array[j];
+    message_order_array[j] = temp;
   }
-
-  if (fwrite(driver_data->message, 1, driver_data->message_length, output_file) !=
-      driver_data->message_length) {
-    fclose(output_file);
-    return FILE_ERROR;
-  }
-
-  free(driver_data->message);
-  output_report(driver_data);
 
   return SUCCESS;
 }
 
-int send_packets_in_random_order(DriverData *driver_data) {
-  if (!driver_data) {
+int send_messages_in_random_order(PacketBuffer const *packet_buffer,
+                                  size_t *message_order_array,
+                                  ReceiverData *const receiver_data) {
+  if (!packet_buffer || !message_order_array || !receiver_data) {
     return MEMORY_ERROR;
   }
 
-  unsigned int packet_count = driver_data->transmitter_data->packet_count;
-  int *indices = (int *)malloc(packet_count * sizeof(int));
-  if (!indices) {
-    return MEMORY_ERROR;
-  }
-
-  if (randomize_indices(indices, packet_count, packet_count) != SUCCESS) {
-    free(indices);
-    return GENERIC_ERROR;
-  }
-
-  log_timing_stage(driver_data, PACKET_BUFFER_RECEIVED, 1);
-  for (unsigned int i = 0; i < packet_count; i++) {
-    Packet *packet = &driver_data->transmitter_data->packet_buffer[indices[i]];
-    if (receiver_receive_packet(driver_data->receiver_data, *packet) != SUCCESS) {
-      free(indices);
-      LOG_ERROR("Failed to receive packet %d; aborting", i);
+  for (size_t i = 0; i < packet_buffer->length; i++) {
+    Packet packet;
+    packet = packet_buffer->buffer[message_order_array[i]];
+    if (receiver_receive_packet(receiver_data, packet) != SUCCESS) {
       return GENERIC_ERROR;
     }
   }
-  log_timing_stage(driver_data, PACKET_BUFFER_RECEIVED, 0);
-  free(indices);
+
   return SUCCESS;
 }
 
-int rereceiver_assemble_message(DriverData *driver_data) {
-  if (!driver_data) {
-    LOG_ERROR("Driver data is NULL");
+int compare_messages(const uint8_t *message, const uint8_t *reassembled_message,
+                     const size_t message_length) {
+  if (!message || !reassembled_message) {
     return MEMORY_ERROR;
   }
 
-  uint8_t *output_message_buffer =
-      (uint8_t *)malloc(driver_data->message_length);
-  if (!output_message_buffer) {
-    LOG_ERROR("Failed to allocate memory for output message buffer");
-    return MEMORY_ERROR;
+  for (size_t i = 0; i < message_length; i++) {
+    if (message[i] != reassembled_message[i]) {
+      LOG_ERROR("Message comparison failed at index %zu", i);
+      return DATA_INTEGRITY_ERROR;
+    }
   }
 
-  log_timing_stage(driver_data, MESSAGE_REASSEMBLED, 1);
-  if (receiver_assemble_message(output_message_buffer, driver_data->receiver_data) !=
-      SUCCESS) {
-    LOG_ERROR("Failed to assemble message");
-    free(output_message_buffer);
+  return SUCCESS;
+}
+
+int benchmark_call(const CallArguments *call_arguments) {
+  time_t start_time;
+  double timed_stages[STAGE_COUNT];
+  uint8_t *message = (uint8_t *)malloc(call_arguments->message_length);
+  uint8_t *reassembled_message =
+      (uint8_t *)malloc(call_arguments->message_length);
+  size_t *message_order_array =
+      (size_t *)malloc(call_arguments->message_length * sizeof(size_t));
+  TransmitterData transmitter_data;
+  ReceiverData receiver_data;
+
+  if (!message) {
+    return MEMORY_ERROR;
+  }
+  start_time = time(NULL);
+  if (generate_message(message, call_arguments->message_length,
+                       call_arguments->message_offset,
+                       call_arguments->input_file_path) != SUCCESS) {
     return GENERIC_ERROR;
   }
-  log_timing_stage(driver_data, MESSAGE_REASSEMBLED, 0);
+  timed_stages[MESSAGE_GENERATED] = time(NULL) - start_time;
 
-  free(output_message_buffer);
-  return SUCCESS;
-}
+  start_time = time(NULL);
+  if (init_transmitter_data(&transmitter_data, message,
+                            call_arguments->message_length,
+                            call_arguments->part_size) != SUCCESS) {
+    return GENERIC_ERROR;
+  }
+  timed_stages[PACKET_BUFFER_INITIALIZED] = difftime(time(NULL), start_time);
 
-int randomize_indices(int *indices, size_t count,
-                      unsigned int iteration_count) {
-  if (!indices) {
-    return MEMORY_ERROR;
+  for (int i = 0; i < transmitter_data.packet_buffer.length; i++) {
+    LOG_DEBUG("Packet %d: %s", i,
+              transmitter_data.packet_buffer.buffer[i].payload);
   }
 
-  for (unsigned int i = 0; i < count; i++) {
-    indices[i] = i;
+  if (receiver_init(&receiver_data) != SUCCESS) {
+    return GENERIC_ERROR;
   }
 
-  for (unsigned int i = 0; i < iteration_count; i++) {
-    unsigned int index1 = rand() % count;
-    unsigned int index2 = rand() % count;
-    int temp = indices[index1];
-    indices[index1] = indices[index2];
-    indices[index2] = temp;
+  if (init_message_order_array(message_order_array,
+                               transmitter_data.packet_buffer.length) !=
+      SUCCESS) {
+    return GENERIC_ERROR;
   }
-  return SUCCESS;
-}
+  start_time = time(NULL);
+  if (send_messages_in_random_order(&transmitter_data.packet_buffer,
+                                    message_order_array,
+                                    &receiver_data) != SUCCESS) {
+    return GENERIC_ERROR;
+  }
+  timed_stages[PACKET_BUFFER_RECEIVED] = difftime(time(NULL), start_time);
 
-int output_report(DriverData *driver_data) {
-  if (!driver_data) {
-    return MEMORY_ERROR;
+  start_time = time(NULL);
+  if (receiver_assemble_message(reassembled_message, &receiver_data) !=
+      SUCCESS) {
+    return GENERIC_ERROR;
+  }
+  LOG_DEBUG("Message reassembled %ld", start_time);
+  timed_stages[MESSAGE_REASSEMBLED] = difftime(time(NULL), start_time);
+
+  print_report(timed_stages);
+
+  FILE *output_file = fopen("output.bin", "w");
+  if (!output_file) {
+    return GENERIC_ERROR;
+  }
+  for (size_t i = 0; i < call_arguments->message_length; i++) {
+    fprintf(output_file, "%c", reassembled_message[i]);
   }
 
-  time_t total_time = 0;
-  for (int i = 0; i < STAGE_COUNT; i++) {
-    time_t stage_time = driver_data->stage_finished_times[i] -
-                        driver_data->stage_started_times[i];
-    total_time += stage_time;
-    LOG_INFO("Stage %s took %ld seconds", TIMING_STAGE_NAMES_STR[i],
-             stage_time);
-  }
-  LOG_INFO("Total time: %ld seconds", total_time);
-  return SUCCESS;
+  return compare_messages(message, reassembled_message,
+                          call_arguments->message_length);
 }

@@ -16,7 +16,7 @@ int packet_init(Packet *packet_ptr, const PacketType type,
     return MEMORY_ERROR;
   }
   memcpy(payload_buffer, payload, payload_length);
-
+  LOG_DEBUG("Payload: %s", payload_buffer);
   packet_ptr->type = type;
   packet_ptr->message_length = message_length;
   packet_ptr->offset = offset;

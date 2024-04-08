@@ -1,24 +1,20 @@
 #include "stack.h"
 
-int stack_init(Stack *const stack, const unsigned int capacity,
-               DestroyItemCallback destroy_item_callback,
-               CopyItemCallback copy_item_callback) {
-  if (!stack || !destroy_item_callback || !copy_item_callback) {
+int stack_init(Stack *const stack, const size_t capacity) {
+  if (!stack) {
     return MEMORY_ERROR;
   }
   if (capacity == 0) {
     return INVALID_ARGUMENTS;
   }
 
-  void **buffer = (void **)malloc(sizeof(void *) * capacity);
+  Packet *buffer = (Packet *)malloc(sizeof(Packet) * capacity);
   if (!buffer) {
     return MEMORY_ERROR;
   }
   stack->capacity = capacity;
   stack->head_index = 0;
   stack->data_buffer = buffer;
-  stack->destroy_item_callback = destroy_item_callback;
-  stack->copy_item_callback = copy_item_callback;
   return SUCCESS;
 }
 
@@ -27,8 +23,8 @@ int stack_clear(Stack *const stack) {
     return MEMORY_ERROR;
   }
   for (int i = 0; i < stack->head_index; i++) {
-    void *item = stack->data_buffer[i];
-    if (stack->destroy_item_callback(item) != SUCCESS) {
+    Packet *item = &stack->data_buffer[i];
+    if (packet_destroy(item) != SUCCESS) {
       LOG_ERROR("Failed deallocating stack item at index %d", i);
     }
   }
@@ -48,7 +44,7 @@ int stack_destroy(Stack *stack) {
   return SUCCESS;
 }
 
-int stack_push_item(Stack *const stack, const void *item) {
+int stack_push_item(Stack *const stack, const Packet item) {
   if (!stack) {
     return MEMORY_ERROR;
   }
@@ -56,19 +52,21 @@ int stack_push_item(Stack *const stack, const void *item) {
   if (new_head_index >= stack->capacity) {
     size_t new_capacity = stack->capacity * 2;
     stack->data_buffer =
-        (void **)realloc(stack->data_buffer, sizeof(void *) * new_capacity);
+        (Packet *)realloc(stack->data_buffer, sizeof(Packet) * new_capacity);
     if (!stack->data_buffer) {
       return MEMORY_ERROR;
     }
     stack->capacity = new_capacity;
   }
 
+  LOG_DEBUG("Pushing item to stack at index %d", new_head_index);
+  LOG_DEBUG("Content: %s", item.payload);
   stack->data_buffer[new_head_index] = item;
   stack->head_index = new_head_index;
   return SUCCESS;
 }
 
-int stack_pop_item(Stack *const stack, void **const item) {
+int stack_pop_item(Stack *const stack, Packet *const item) {
   if (!stack || !item) {
     return MEMORY_ERROR;
   }
@@ -76,20 +74,17 @@ int stack_pop_item(Stack *const stack, void **const item) {
     return RANGE_ERROR;
   }
   int status_code = SUCCESS;
-  void *head_item = stack->data_buffer[stack->head_index];
-  if ((status_code = stack->copy_item_callback(*item, head_item)) != SUCCESS) {
-    return status_code;
-  }
-  if ((status_code = stack->destroy_item_callback(head_item)) != SUCCESS) {
-    return status_code;
+  Packet *head_item = &stack->data_buffer[stack->head_index];
+  memcpy(item, head_item, sizeof(Packet));
+  if (packet_destroy(head_item) != SUCCESS) {
+    return MEMORY_ERROR;
   }
 
   stack->head_index -= 1;
-
   if (stack->head_index < stack->capacity / 2) {
     size_t new_capacity = stack->capacity / 2;
     stack->data_buffer =
-        (void **)realloc(stack->data_buffer, sizeof(void *) * new_capacity);
+        (Packet *)realloc(stack->data_buffer, sizeof(Packet) * new_capacity);
     if (!stack->data_buffer) {
       return MEMORY_ERROR;
     }
@@ -97,7 +92,7 @@ int stack_pop_item(Stack *const stack, void **const item) {
   return SUCCESS;
 }
 
-int stack_head(Stack *const stack, void **item) {
+int stack_head(Stack *const stack, Packet *item) {
   if (!stack || !item) {
     return MEMORY_ERROR;
   }
@@ -105,8 +100,11 @@ int stack_head(Stack *const stack, void **item) {
     return RANGE_ERROR;
   }
 
-  void *head_item = stack->data_buffer[stack->head_index];
-  *item = head_item;
+  Packet *head_item = &stack->data_buffer[stack->head_index];
+  LOG_DEBUG("Getting head item from stack at index %d, %d, %d",
+            stack->head_index, stack->capacity, head_item->length);
+  LOG_DEBUG("Content__: %s", head_item->payload);
+  item = head_item;
 
   return SUCCESS;
 }
