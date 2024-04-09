@@ -1,27 +1,107 @@
 #include "message_transmitter.h"
 
-int init_transmitter_data(TransmitterData *transmitter_data,
-                          const uint8_t *message, const size_t message_length,
-                          const size_t max_packet_length) {
+int _copy_message_slice(const uint8_t *const message,
+                        const size_t message_length,
+                        const size_t payload_offset,
+                        const size_t payload_length,
+                        uint8_t *const payload_buffer) {
+  if (!message || !payload_buffer) {
+    return MEMORY_ERROR;
+  }
+  if (message_length == 0 || payload_length == 0 ||
+      payload_length > PAYLOAD_BUFFER_LENGTH) {
+    return INVALID_ARGUMENTS;
+  }
+  if (payload_offset + payload_length > message_length) {
+    return RANGE_ERROR;
+  }
+
+  memcpy(payload_buffer, message + payload_offset, payload_length);
+  return SUCCESS;
+}
+
+int transmitter_send_data_packet(TransmitterData *const transmitter_data,
+                                 const unsigned int packet_index,
+                                 const Packet *packet) {
+  if (!transmitter_data || !packet) {
+    return MEMORY_ERROR;
+  }
+  if (packet_index > transmitter_data->packet_count) {
+    return RANGE_ERROR;
+  }
+
+  if (transmitter_data->packet_send_state[packet_index]) {
+    return SUCCESS;
+  }
+
+  size_t offset = packet_index * transmitter_data->max_payload_length;
+  size_t length = packet_index == transmitter_data->packet_count - 1
+                      ? transmitter_data->message_length %
+                            transmitter_data->max_payload_length
+                      : transmitter_data->max_payload_length;
+
+  int status_code = _copy_message_slice(
+      transmitter_data->message_ptr, transmitter_data->message_length, offset,
+      length, transmitter_data->payload_buffer);
+  if (status_code != SUCCESS) {
+    return status_code;
+  }
+
+  status_code = packet_init(packet, DATA, transmitter_data->message_length,
+                            offset, length, transmitter_data->payload_buffer);
+  if (status_code != SUCCESS) {
+    return status_code;
+  }
+
+  transmitter_data->packet_send_state[packet_index] = true;
+  return SUCCESS;
+}
+
+int transmitter_send_metadata_packet(
+    const TransmitterData *const transmitter_data, const PacketType packet_type,
+    Packet *const packet) {
+  if (!transmitter_data || !packet) {
+    return MEMORY_ERROR;
+  }
+
+  if (packet_type != START || packet_type != END) {
+    return INVALID_ARGUMENTS;
+  }
+
+  return packet_init(packet, packet_type, transmitter_data->message_length, 0,
+                     0, NULL);
+}
+
+int transmitter_init(TransmitterData *transmitter_data,
+                     const uint8_t *const message, const size_t message_length,
+                     const size_t max_payload_length) {
   if (!transmitter_data || !message) {
-    LOG_ERROR("Invalid message data or message %p %p", transmitter_data,
-              message);
     return MEMORY_ERROR;
   }
 
-  if (message_length == 0 || max_packet_length == 0) {
-    LOG_ERROR("Invalid message length or max packet size");
-    return DATA_INTEGRITY_ERROR;
+  if (message_length == 0 || max_payload_length == 0 ||
+      max_payload_length > PAYLOAD_BUFFER_LENGTH) {
+    return INVALID_ARGUMENTS;
   }
 
-  if (packet_init_buffer(&transmitter_data->packet_buffer, message,
-                         message_length, max_packet_length) != SUCCESS) {
-    return MEMORY_ERROR;
-  }
-
+  transmitter_data->packet_count = message_length / max_payload_length +
+                                   (message_length % max_payload_length > 0);
+  transmitter_data->packet_send_state =
+      (bool *)calloc(transmitter_data->packet_count, sizeof(bool));
   transmitter_data->message_length = message_length;
-  transmitter_data->max_packet_length = max_packet_length;
-  transmitter_data->state = INITIALIZED;
+  transmitter_data->max_payload_length = max_payload_length;
+  return SUCCESS;
+}
+
+int transmitter_are_all_packets_sent(
+    const TransmitterData *const transmitter_data, bool *const are_all_sent) {
+  if (!transmitter_data) {
+    return MEMORY_ERROR;
+  }
+  *are_all_sent = true;
+  for (unsigned int i = 0; i < transmitter_data->packet_count; i++) {
+    *are_all_sent &= transmitter_data->packet_send_state[i];
+  }
   return SUCCESS;
 }
 
@@ -29,78 +109,6 @@ int destroy_transmitter_data(TransmitterData *transmitter_data) {
   if (!transmitter_data) {
     return MEMORY_ERROR;
   }
-  return packet_destroy_buffer(&transmitter_data->packet_buffer);
-}
-
-int packet_init_buffer(PacketBuffer *packet_buffer, const uint8_t *message,
-                       const size_t message_length,
-                       const size_t max_packet_length) {
-
-  if (!packet_buffer || !message) {
-    return MEMORY_ERROR;
-  }
-  if (message_length == 0 || max_packet_length == 0) {
-    return INVALID_ARGUMENTS;
-  }
-
-  unsigned int packet_count = message_length / max_packet_length;
-  size_t last_packet_length = message_length % max_packet_length;
-  if (last_packet_length > 0) {
-    packet_count += 1;
-  }
-
-  Packet *packets = (Packet *)malloc(sizeof(Packet) * packet_count);
-  if (!packets) {
-    return MEMORY_ERROR;
-  }
-
-  uint8_t *payload_buffer = (uint8_t *)malloc(max_packet_length);
-
-  int status_code = SUCCESS;
-  unsigned int allocated_packet_count = 0;
-  for (unsigned int i; i < packet_count; i++) {
-    Packet *packet = &packets[i];
-    size_t offset = i * max_packet_length;
-    size_t packet_length = 0;
-    if (last_packet_length > 0 && i == packet_count - 1) {
-      packet_length = last_packet_length;
-    } else {
-      packet_length = max_packet_length;
-    }
-    if (offset + packet_length > message_length) {
-      status_code = RANGE_ERROR;
-      break;
-    }
-    payload_buffer = message + offset;
-    if (packet_init(packet, DATA, message_length, offset, packet_length,
-                    payload_buffer) != SUCCESS) {
-      status_code = MEMORY_ERROR;
-      break;
-    }
-    allocated_packet_count++;
-  }
-
-  if (status_code != SUCCESS) {
-    for (unsigned i = 0; i < allocated_packet_count; i++) {
-      packet_destroy(&packets[i]);
-    }
-    free(packets);
-  }
-  packet_buffer->buffer = packets;
-  packet_buffer->length = packet_count;
-  return status_code;
-}
-
-int packet_destroy_buffer(PacketBuffer *packet_buffer) {
-  if (!packet_buffer) {
-    return MEMORY_ERROR;
-  }
-  int status_code = SUCCESS;
-  for (unsigned int i = 0; i < packet_buffer->length; i++) {
-    if (packet_destroy(&packet_buffer->buffer[i]) != SUCCESS) {
-      LOG_ERROR("Failed to destroy packet");
-      status_code = MEMORY_ERROR;
-    }
-  }
-  return status_code;
+  free(transmitter_data->packet_send_state);
+  return SUCCESS;
 }

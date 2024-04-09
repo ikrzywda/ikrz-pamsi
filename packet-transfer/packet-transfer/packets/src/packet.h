@@ -14,19 +14,16 @@ typedef enum {
 } PacketType;
 
 typedef struct {
-  PacketType type;
+  uint8_t payload[PAYLOAD_BUFFER_LENGTH];
   size_t message_length;
   size_t offset;
   size_t length;
-  uint8_t* payload;
+  PacketType type;
 } Packet;
 
 
-int packet_init(Packet* packet_ptr, const PacketType type, const size_t message_length,
+int packet_init(Packet *const packet_ptr, const PacketType type, const size_t message_length,
                 const size_t offset, const size_t payload_length,
-                const uint8_t* payload);
-
-int packet_destroy(Packet* packet_ptr);
-int packet_copy(Packet *destination, const Packet *source);
+                const uint8_t *const payload);
 
 #endif  // PACKET_H

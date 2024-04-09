@@ -131,9 +131,9 @@ int benchmark_call(const CallArguments *call_arguments) {
   timed_stages[MESSAGE_GENERATED] = time(NULL) - start_time;
 
   start_time = time(NULL);
-  if (init_transmitter_data(&transmitter_data, message,
-                            call_arguments->message_length,
-                            call_arguments->part_size) != SUCCESS) {
+  if (transmitter_init(&transmitter_data, message,
+                       call_arguments->message_length,
+                       call_arguments->part_size) != SUCCESS) {
     return GENERIC_ERROR;
   }
   timed_stages[PACKET_BUFFER_INITIALIZED] = difftime(time(NULL), start_time);

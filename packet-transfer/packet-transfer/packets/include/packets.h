@@ -8,6 +8,5 @@
 typedef ReceiverData ReceiverData;
 typedef TransmitterData TransmitterData;
 typedef Packet Packet;
-typedef TransmitterDataState TransmitterDataState;
 
 #endif // PACKETS_H

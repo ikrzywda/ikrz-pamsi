@@ -1,5 +1,25 @@
 #include "message_receiver.h"
 
+int _init_result_message_buffer(uint8_t *output_message_buffer_ptr,
+                                const ReceiverData *const receiver_data) {
+  if (output_message_buffer_ptr != NULL || !receiver_data) {
+    return MEMORY_ERROR;
+  }
+
+  if (receiver_data->message_length == 0) {
+    return INVALID_ARGUMENTS;
+  }
+
+  output_message_buffer_ptr =
+      (uint8_t *)malloc(sizeof(uint8_t) * receiver_data->message_length);
+
+  if (!output_message_buffer_ptr) {
+    return MEMORY_ERROR;
+  }
+
+  return SUCCESS;
+}
+
 int receiver_init(ReceiverData *const receiver_data) {
   if (!receiver_data) {
     return MEMORY_ERROR;
@@ -25,64 +45,59 @@ int receiver_destroy(ReceiverData *const receiver_data_ptr) {
 }
 
 int receiver_receive_packet(ReceiverData *const receiver_data,
-                            const Packet packet) {
-  if (!receiver_data) {
+                            const Packet *const packet) {
+  if (!receiver_data || !packet) {
     return MEMORY_ERROR;
   }
-  if (stack_push_item(&receiver_data->packet_stack, packet) != SUCCESS) {
-    return MEMORY_ERROR;
+  switch (packet->type) {
+  case START:
+    if (receiver_data->state != RECEIVER_STATE_AWAITING) {
+      return DATA_INTEGRITY_ERROR;
+    }
+    receiver_data->state = RECEIVER_STATE_AWAITING;
+    receiver_data->message_length = packet->message_length;
+    return SUCCESS;
+  case DATA:
+    if (receiver_data->state != RECEIVER_STATE_AWAITING) {
+      return DATA_INTEGRITY_ERROR;
+    }
+    return stack_push_item(&receiver_data->packet_stack, *packet);
+  case END:
+    if (receiver_data->state != RECEIVER_STATE_AWAITING) {
+      return DATA_INTEGRITY_ERROR;
+    }
+    receiver_data->state = RECEIVER_STATE_READY;
+    return SUCCESS;
+
+    return INVALID_ARGUMENTS;
   }
-  return SUCCESS;
 }
 
 int receiver_assemble_message(uint8_t *const output_message_buffer_ptr,
                               ReceiverData *receiver_data) {
   if (!output_message_buffer_ptr || !receiver_data) {
-    LOG_ERROR("Output message buffer or receiver data is NULL, %p, %p",
-              output_message_buffer_ptr, receiver_data);
     return MEMORY_ERROR;
   }
 
-  int status_code;
-  bool is_empty;
-  if ((status_code = stack_is_empty(&receiver_data->packet_stack, &is_empty)) !=
-      SUCCESS) {
-    LOG_ERROR("Failed to check if packet stack is empty");
+  if (receiver_data->state != RECEIVER_STATE_READY) {
+    return INVALID_ARGUMENTS;
+  }
+
+  int status_code =
+      _init_result_message_buffer(output_message_buffer_ptr, receiver_data);
+  if (status_code != SUCCESS) {
     return status_code;
   }
-
-  if (is_empty) {
-    LOG_ERROR("Packet stack is empty");
-    return DATA_INTEGRITY_ERROR;
-  }
-
-  Stack *packet_stack = &receiver_data->packet_stack;
-  Packet packet;
-
-  if ((status_code = stack_head(packet_stack, &packet)) != SUCCESS ||
-      packet.message_length < 1) {
-    LOG_ERROR("Failed to get packet from stack or message length is invalid, "
-              "status code: %d, message length: %zu",
-              status_code, packet.message_length);
-    return DATA_INTEGRITY_ERROR;
-  }
-  size_t message_length = packet.message_length;
-  size_t packet_count = packet_stack->head_index;
-
-  for (size_t i = 0; i < packet_count; i++) {
-    if (stack_pop_item(packet_stack, &packet) != SUCCESS) {
-      LOG_ERROR("Failed to pop packet from stack");
-      return DATA_INTEGRITY_ERROR;
+  bool is_packet_stack_empty;
+  Packet current_packet;
+  while ((status_code = stack_is_empty(&receiver_data->packet_stack,
+                                       &is_packet_stack_empty)) == SUCCESS &&
+         !is_packet_stack_empty) {
+    status_code = stack_pop_item(&receiver_data->packet_stack, &current_packet);
+    if (status_code != SUCCESS) {
+      return status_code;
     }
-    if (packet.offset + packet.length > message_length) {
-      return DATA_INTEGRITY_ERROR;
-    }
-    LOG_DEBUG(
-        "Copying packet payload to output buffer, offset: %zu, length: %zu",
-        packet.offset, packet.length);
-    LOG_DEBUG("%s", packet.payload);
-    memcpy(output_message_buffer_ptr + packet.offset, packet.payload,
-           packet.length);
+    memcpy(output_message_buffer_ptr + current_packet.offset,
+           current_packet.payload, current_packet.length);
   }
-  return SUCCESS;
 }
