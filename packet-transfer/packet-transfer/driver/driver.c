@@ -231,7 +231,7 @@ int benchmark_call(const int argc, char **argv) {
 
   _print_report(timed_stages);
 
-  FILE *output_file = fopen("output.bin", "w");
+  FILE *output_file = fopen("output.txt", "w");
   if (!output_file) {
     return MEMORY_ERROR;
   }

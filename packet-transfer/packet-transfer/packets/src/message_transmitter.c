@@ -17,6 +17,8 @@ int _copy_message_slice(const uint8_t *const message,
     return INVALID_ARGUMENTS;
   }
   if (payload_offset + payload_length > message_length) {
+    LOG_ERROR("Payload offset and length exceed message length %zu %zu %zu",
+              payload_offset, payload_length, message_length);
     return RANGE_ERROR;
   }
 
@@ -40,7 +42,7 @@ int transmitter_send_data_packet(TransmitterData *const transmitter_data,
 
   size_t offset = packet_index * transmitter_data->max_payload_length;
   size_t length = transmitter_data->max_payload_length;
-  if (packet_index == transmitter_data->packet_count - 2) {
+  if (packet_index == transmitter_data->packet_count - 1) {
     size_t last_packet_length =
         transmitter_data->message_length % transmitter_data->max_payload_length;
     length = last_packet_length == 0 ? transmitter_data->max_payload_length
@@ -123,3 +125,5 @@ int destroy_transmitter_data(TransmitterData *transmitter_data) {
   free(transmitter_data->packet_send_state);
   return SUCCESS;
 }
+
+

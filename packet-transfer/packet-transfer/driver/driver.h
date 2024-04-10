@@ -28,7 +28,7 @@ typedef enum {
 } TimingStage;
 
 
-int benchmark_call(const int argc, char **argv);
+int benchmark_call(int argc, char **argv);
 
 
 #endif // DRIVER_H
