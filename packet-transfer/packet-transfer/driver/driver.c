@@ -52,18 +52,36 @@ int _generate_message(uint8_t const *message, const size_t message_length,
   fseek(input_file, 0, SEEK_END);
   size_t file_size = ftell(input_file);
   fseek(input_file, offset, SEEK_SET);
-  uint8_t *buffer = (uint8_t *)malloc(message_length);
+  LOG_INFO("File size: %zu", file_size);
+
+  uint8_t *buffer = (uint8_t *)malloc(file_size * sizeof(uint8_t));
   if (!buffer) {
     return MEMORY_ERROR;
   }
 
-  if (fread(buffer, 1, message_length, input_file) != message_length) {
+  if (fread(buffer, 1, file_size, input_file) != file_size) {
+    LOG_ERROR("Failed to read file");
     return GENERIC_ERROR;
   }
-
   fclose(input_file);
 
-  memcpy(message, buffer, message_length);
+  unsigned int iteration_count = message_length / file_size;
+  unsigned int remaining_bytes = message_length % file_size;
+
+  LOG_DEBUG("Iteration count: %u, %u", iteration_count, remaining_bytes);
+
+  size_t offset_bytes = 0;
+  for (unsigned int i = 0; i < iteration_count; i++) {
+    LOG_DEBUG("Copying %zu bytes", file_size);
+    memcpy(message + offset_bytes, buffer, file_size);
+    offset_bytes += file_size;
+  }
+
+  // If there are remaining bytes to copy
+  if (remaining_bytes > 0) {
+    LOG_DEBUG("Copying remaining %zu bytes", remaining_bytes);
+    memcpy(message + offset_bytes, buffer, remaining_bytes);
+  }
 
   return SUCCESS;
 }
