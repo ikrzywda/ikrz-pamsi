@@ -5,6 +5,8 @@ typedef struct {
   size_t part_size;
   int message_offset;
   const char *input_file_path;
+  const char *generated_message_path;
+  const char *reassembled_message_path;
 } CallArguments;
 
 void _print_report(const double *timed_stages) {
@@ -20,22 +22,25 @@ void _print_usage() {
 }
 
 int _init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
-  if (argc != 4) {
+  if (argc != 5) {
     _print_usage();
     return INVALID_ARGUMENTS;
   }
 
-  if (getenv(DEFAULT_INPUT_FILE_PATH_ENV_VAR)) {
-    call_arguments->input_file_path = getenv(DEFAULT_INPUT_FILE_PATH_ENV_VAR);
-  } else {
-    LOG_ERROR("Input file path not found");
-    _print_usage();
-    return INVALID_ARGUMENTS;
+  if (!call_arguments) {
+    return MEMORY_ERROR;
   }
+
 
   call_arguments->message_length = atoi(argv[1]);
   call_arguments->part_size = atoi(argv[2]);
-  call_arguments->message_offset = 0;
+  call_arguments->message_offset = atoi(argv[3]);
+  call_arguments->input_file_path = argv[4];
+  call_arguments->generated_message_path = getenv(GENERATED_INPUT_PATH_ENV_VAR);
+  call_arguments->reassembled_message_path = getenv(REASSEMBLED_PATH_ENV_VAR); 
+  LOG_DEBUG("Message length: %zu, Part size: %zu, Offset: %d, Input file path: %s, Generated message path: %s, Reassembled message path: %s",
+            call_arguments->message_length, call_arguments->part_size,
+            call_arguments->message_offset, call_arguments->input_file_path, call_arguments->generated_message_path, call_arguments->reassembled_message_path);
   return SUCCESS;
 }
 
@@ -197,6 +202,13 @@ int benchmark_call(const int argc, char **argv) {
   }
   timed_stages[MESSAGE_GENERATED] = time(NULL) - start_time;
 
+  FILE *generated_input_file_path = fopen(call_arguments.generated_message_path, "w");
+  if (!generated_input_file_path) {
+    return MEMORY_ERROR;
+  }
+  fwrite(message, 1, call_arguments.message_length, generated_input_file_path);
+  fclose(generated_input_file_path);
+
   start_time = time(NULL);
   if ((status_code = transmitter_init(&transmitter_data, message,
                                       call_arguments.message_length,
@@ -231,14 +243,13 @@ int benchmark_call(const int argc, char **argv) {
 
   _print_report(timed_stages);
 
-  FILE *output_file = fopen("output.txt", "w");
+  FILE *output_file = fopen(call_arguments.reassembled_message_path, "w");
   if (!output_file) {
     return MEMORY_ERROR;
   }
-  for (size_t i = 0; i < call_arguments.message_length; i++) {
-    fprintf(output_file, "%c", reassembled_message[i]);
-  }
 
-  return _compare_messages(message, reassembled_message,
-                           call_arguments.message_length);
+  fwrite(reassembled_message, 1, call_arguments.message_length, output_file);
+  fclose(output_file);
+
+  return SUCCESS;
 }
