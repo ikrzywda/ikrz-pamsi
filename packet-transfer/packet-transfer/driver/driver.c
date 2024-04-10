@@ -1,14 +1,27 @@
 #include "driver.h"
 
-void print_report(const double *timed_stages) {
+typedef struct {
+  size_t message_length;
+  size_t part_size;
+  int message_offset;
+  const char *input_file_path;
+} CallArguments;
+
+void _print_report(const double *timed_stages) {
   LOG_INFO("Benchmark report:");
   for (size_t i = 0; i < STAGE_COUNT; i++) {
     LOG_INFO("%s: %lf", TIMING_STAGE_NAMES_STR[i], timed_stages[i]);
   }
 }
 
-int init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
+void _print_usage() {
+  LOG_INFO("Usage: LOG_LEVEL=<log_level> INPUT_FILE_PATH=<input_file_path> "
+           "./driver <message_length> <part_length> <offset>");
+}
+
+int _init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
   if (argc != 4) {
+    _print_usage();
     return INVALID_ARGUMENTS;
   }
 
@@ -16,6 +29,7 @@ int init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
     call_arguments->input_file_path = getenv(DEFAULT_INPUT_FILE_PATH_ENV_VAR);
   } else {
     LOG_ERROR("Input file path not found");
+    _print_usage();
     return INVALID_ARGUMENTS;
   }
 
@@ -25,8 +39,8 @@ int init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
   return SUCCESS;
 }
 
-int generate_message(uint8_t const *message, const size_t message_length,
-                     const int offset, const char *input_file_path) {
+int _generate_message(uint8_t const *message, const size_t message_length,
+                      const int offset, const char *input_file_path) {
   if (!message) {
     return MEMORY_ERROR;
   }
@@ -54,19 +68,19 @@ int generate_message(uint8_t const *message, const size_t message_length,
   return SUCCESS;
 }
 
-int init_message_order_array(size_t *message_order_array,
-                             const size_t packet_buffer_length) {
+int _init_message_order_array(size_t *message_order_array,
+                              const unsigned int packet_count) {
   if (!message_order_array) {
     return MEMORY_ERROR;
   }
 
-  for (size_t i = 0; i < packet_buffer_length; i++) {
+  for (unsigned int i = 0; i < packet_count; i++) {
     message_order_array[i] = i;
   }
 
-  for (size_t i = 0; i < packet_buffer_length; i++) {
-    size_t j = rand() % packet_buffer_length;
-    size_t temp = message_order_array[i];
+  for (unsigned int i = 0; i < packet_count; i++) {
+    unsigned int j = rand() % packet_count;
+    unsigned int temp = message_order_array[i];
     message_order_array[i] = message_order_array[j];
     message_order_array[j] = temp;
   }
@@ -74,26 +88,53 @@ int init_message_order_array(size_t *message_order_array,
   return SUCCESS;
 }
 
-int send_messages_in_random_order(PacketBuffer const *packet_buffer,
-                                  size_t *message_order_array,
-                                  ReceiverData *const receiver_data) {
-  if (!packet_buffer || !message_order_array || !receiver_data) {
+int _send_messages_in_random_order(
+    const TransmitterData const *transmitter_data, size_t *message_order_array,
+    ReceiverData *const receiver_data) {
+  if (!transmitter_data || !message_order_array || !receiver_data) {
     return MEMORY_ERROR;
   }
 
-  for (size_t i = 0; i < packet_buffer->length; i++) {
-    Packet packet;
-    packet = packet_buffer->buffer[message_order_array[i]];
-    if (receiver_receive_packet(receiver_data, packet) != SUCCESS) {
-      return GENERIC_ERROR;
+  Packet current_packet;
+  int status_code;
+  if ((status_code = transmitter_send_metadata_packet(
+           transmitter_data, START, &current_packet)) != SUCCESS) {
+    return status_code;
+  }
+
+  if ((status_code = receiver_receive_packet(receiver_data, &current_packet)) !=
+      SUCCESS) {
+    return status_code;
+  }
+
+  for (size_t i = 0; i < transmitter_data->packet_count; i++) {
+    if ((status_code = transmitter_send_data_packet(
+             transmitter_data, message_order_array[i], &current_packet)) !=
+        SUCCESS) {
+      return status_code;
     }
+
+    if ((status_code = receiver_receive_packet(receiver_data,
+                                               &current_packet)) != SUCCESS) {
+      return status_code;
+    }
+  }
+
+  if ((status_code = transmitter_send_metadata_packet(
+           transmitter_data, END, &current_packet)) != SUCCESS) {
+    return status_code;
+  }
+  if ((status_code = receiver_receive_packet(receiver_data, &current_packet)) !=
+      SUCCESS) {
+    return status_code;
   }
 
   return SUCCESS;
 }
 
-int compare_messages(const uint8_t *message, const uint8_t *reassembled_message,
-                     const size_t message_length) {
+int _compare_messages(const uint8_t *message,
+                      const uint8_t *reassembled_message,
+                      const size_t message_length) {
   if (!message || !reassembled_message) {
     return MEMORY_ERROR;
   }
@@ -108,14 +149,21 @@ int compare_messages(const uint8_t *message, const uint8_t *reassembled_message,
   return SUCCESS;
 }
 
-int benchmark_call(const CallArguments *call_arguments) {
+int benchmark_call(const int argc, char **argv) {
+  CallArguments call_arguments;
+  int status_code;
+
+  if ((status_code = _init_call_arguments(&call_arguments, argc, argv)) !=
+      SUCCESS) {
+    return status_code;
+  }
+
   time_t start_time;
   double timed_stages[STAGE_COUNT];
-  uint8_t *message = (uint8_t *)malloc(call_arguments->message_length);
-  uint8_t *reassembled_message =
-      (uint8_t *)malloc(call_arguments->message_length);
-  size_t *message_order_array =
-      (size_t *)malloc(call_arguments->message_length * sizeof(size_t));
+  uint8_t *message = (uint8_t *)malloc(call_arguments.message_length);
+  uint8_t *reassembled_message = NULL;
+  unsigned int *message_order_array = (unsigned int *)malloc(
+      call_arguments.message_length * sizeof(unsigned int));
   TransmitterData transmitter_data;
   ReceiverData receiver_data;
 
@@ -123,61 +171,56 @@ int benchmark_call(const CallArguments *call_arguments) {
     return MEMORY_ERROR;
   }
   start_time = time(NULL);
-  if (generate_message(message, call_arguments->message_length,
-                       call_arguments->message_offset,
-                       call_arguments->input_file_path) != SUCCESS) {
-    return GENERIC_ERROR;
+  if ((status_code = _generate_message(message, call_arguments.message_length,
+                                       call_arguments.message_offset,
+                                       call_arguments.input_file_path)) !=
+      SUCCESS) {
+    return status_code;
   }
   timed_stages[MESSAGE_GENERATED] = time(NULL) - start_time;
 
   start_time = time(NULL);
-  if (transmitter_init(&transmitter_data, message,
-                       call_arguments->message_length,
-                       call_arguments->part_size) != SUCCESS) {
-    return GENERIC_ERROR;
+  if ((status_code = transmitter_init(&transmitter_data, message,
+                                      call_arguments.message_length,
+                                      call_arguments.part_size)) != SUCCESS) {
+    return status_code;
   }
   timed_stages[PACKET_BUFFER_INITIALIZED] = difftime(time(NULL), start_time);
 
-  for (int i = 0; i < transmitter_data.packet_buffer.length; i++) {
-    LOG_DEBUG("Packet %d: %s", i,
-              transmitter_data.packet_buffer.buffer[i].payload);
+  if ((status_code = receiver_init(&receiver_data)) != SUCCESS) {
+    return status_code;
   }
 
-  if (receiver_init(&receiver_data) != SUCCESS) {
-    return GENERIC_ERROR;
-  }
-
-  if (init_message_order_array(message_order_array,
-                               transmitter_data.packet_buffer.length) !=
-      SUCCESS) {
+  if ((status_code = _init_message_order_array(
+           message_order_array, transmitter_data.packet_count)) !=
+      status_code) {
     return GENERIC_ERROR;
   }
   start_time = time(NULL);
-  if (send_messages_in_random_order(&transmitter_data.packet_buffer,
-                                    message_order_array,
-                                    &receiver_data) != SUCCESS) {
-    return GENERIC_ERROR;
+  if ((status_code = _send_messages_in_random_order(
+           &transmitter_data, message_order_array, &receiver_data)) !=
+      SUCCESS) {
+    return status_code;
   }
   timed_stages[PACKET_BUFFER_RECEIVED] = difftime(time(NULL), start_time);
 
   start_time = time(NULL);
-  if (receiver_assemble_message(reassembled_message, &receiver_data) !=
-      SUCCESS) {
-    return GENERIC_ERROR;
+  if ((status_code = receiver_assemble_message(&reassembled_message,
+                                               &receiver_data)) != SUCCESS) {
+    return status_code;
   }
-  LOG_DEBUG("Message reassembled %ld", start_time);
   timed_stages[MESSAGE_REASSEMBLED] = difftime(time(NULL), start_time);
 
-  print_report(timed_stages);
+  _print_report(timed_stages);
 
   FILE *output_file = fopen("output.bin", "w");
   if (!output_file) {
-    return GENERIC_ERROR;
+    return MEMORY_ERROR;
   }
-  for (size_t i = 0; i < call_arguments->message_length; i++) {
+  for (size_t i = 0; i < call_arguments.message_length; i++) {
     fprintf(output_file, "%c", reassembled_message[i]);
   }
 
-  return compare_messages(message, reassembled_message,
-                          call_arguments->message_length);
+  return _compare_messages(message, reassembled_message,
+                           call_arguments.message_length);
 }

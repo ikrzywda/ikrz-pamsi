@@ -9,6 +9,7 @@ int packet_init(Packet *const packet_ptr, const PacketType type,
 
   if (payload_length > MAX_PATH_LENGTH || message_length == 0 ||
       (payload == NULL && type == DATA)) {
+    LOG_ERROR("Invalid arguments for packet_init");
     return INVALID_ARGUMENTS;
   }
 

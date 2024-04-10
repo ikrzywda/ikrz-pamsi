@@ -9,7 +9,7 @@
 
 
 typedef struct {
-  const uint8_t *const message_ptr;
+  const uint8_t *message_ptr;
   bool *packet_send_state;
   size_t message_length;
   size_t max_payload_length;

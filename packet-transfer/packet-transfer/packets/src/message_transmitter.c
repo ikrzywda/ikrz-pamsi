@@ -6,10 +6,14 @@ int _copy_message_slice(const uint8_t *const message,
                         const size_t payload_length,
                         uint8_t *const payload_buffer) {
   if (!message || !payload_buffer) {
+    LOG_ERROR("Message or payload buffer is NULL %p %p", message,
+              payload_buffer);
     return MEMORY_ERROR;
   }
   if (message_length == 0 || payload_length == 0 ||
       payload_length > PAYLOAD_BUFFER_LENGTH) {
+    LOG_ERROR("Message length or payload length is 0, %zu %zu", message_length,
+              payload_length);
     return INVALID_ARGUMENTS;
   }
   if (payload_offset + payload_length > message_length) {
@@ -35,10 +39,13 @@ int transmitter_send_data_packet(TransmitterData *const transmitter_data,
   }
 
   size_t offset = packet_index * transmitter_data->max_payload_length;
-  size_t length = packet_index == transmitter_data->packet_count - 1
-                      ? transmitter_data->message_length %
-                            transmitter_data->max_payload_length
-                      : transmitter_data->max_payload_length;
+  size_t length = transmitter_data->max_payload_length;
+  if (packet_index == transmitter_data->packet_count - 2) {
+    size_t last_packet_length =
+        transmitter_data->message_length % transmitter_data->max_payload_length;
+    length = last_packet_length == 0 ? transmitter_data->max_payload_length
+                                     : last_packet_length;
+  }
 
   int status_code = _copy_message_slice(
       transmitter_data->message_ptr, transmitter_data->message_length, offset,
@@ -61,10 +68,12 @@ int transmitter_send_metadata_packet(
     const TransmitterData *const transmitter_data, const PacketType packet_type,
     Packet *const packet) {
   if (!transmitter_data || !packet) {
+    LOG_ERROR("Transmitter data or packet is NULL");
     return MEMORY_ERROR;
   }
 
-  if (packet_type != START || packet_type != END) {
+  if (packet_type != START && packet_type != END) {
+    LOG_ERROR("Invalid packet type %d %d", packet_type, START);
     return INVALID_ARGUMENTS;
   }
 
@@ -81,9 +90,11 @@ int transmitter_init(TransmitterData *transmitter_data,
 
   if (message_length == 0 || max_payload_length == 0 ||
       max_payload_length > PAYLOAD_BUFFER_LENGTH) {
+    LOG_ERROR("Message length or max payload length is 0");
     return INVALID_ARGUMENTS;
   }
 
+  transmitter_data->message_ptr = message;
   transmitter_data->packet_count = message_length / max_payload_length +
                                    (message_length % max_payload_length > 0);
   transmitter_data->packet_send_state =

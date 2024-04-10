@@ -9,7 +9,7 @@
 
 typedef enum ReceiverState {
   RECEIVER_STATE_AWAITING,
-  RECEIVER_STATE_AWAITING,
+  RECEIVER_STATE_RECEIVING,
   RECEIVER_STATE_READY,
 } ReceiverState;
 
@@ -24,5 +24,5 @@ int receiver_init(ReceiverData *const receiver_data);
 int receiver_destroy(ReceiverData *const receiver_data);
 
 int receiver_receive_packet(ReceiverData *const receiver_data, const Packet *const packet);
-int receiver_assemble_message(uint8_t *const output_message_buffer_ptr, ReceiverData *receiver_data);
+int receiver_assemble_message(uint8_t *const* output_message_buffer_ptr, ReceiverData *receiver_data);
 

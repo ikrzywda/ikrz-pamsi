@@ -41,6 +41,8 @@ int stack_clear(Stack *const stack);
 */
 int stack_destroy(Stack *stack);
 
+void stack_print(Stack *const stack);
+
 /**
  * Push item to stack
  * 
