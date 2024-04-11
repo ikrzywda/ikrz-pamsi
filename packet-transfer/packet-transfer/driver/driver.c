@@ -9,10 +9,24 @@ typedef struct {
   const char *reassembled_message_path;
 } CallArguments;
 
-void _print_report(const double *timed_stages) {
+// Generated with the help of Github Copilot
+unsigned int _get_time_difference_ms(struct timespec start,
+                                     struct timespec end) {
+  struct timespec time_difference;
+  if ((end.tv_nsec - start.tv_nsec) < 0) {
+    time_difference.tv_sec = end.tv_sec - start.tv_sec - 1;
+    time_difference.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+  } else {
+    time_difference.tv_sec = end.tv_sec - start.tv_sec;
+    time_difference.tv_nsec = end.tv_nsec - start.tv_nsec;
+  }
+  return time_difference.tv_sec * 1000 + time_difference.tv_nsec / 1000000;
+}
+
+void _print_report(const unsigned long *timed_stages) {
   LOG_INFO("Benchmark report:");
   for (size_t i = 0; i < STAGE_COUNT; i++) {
-    LOG_INFO("%s: %lf", TIMING_STAGE_NAMES_STR[i], timed_stages[i]);
+    LOG_INFO("%s: %ld", TIMING_STAGE_NAMES_STR[i], timed_stages[i]);
   }
 }
 
@@ -31,9 +45,9 @@ int _init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
     return MEMORY_ERROR;
   }
 
-  call_arguments->message_length = atoi(argv[1]);
-  call_arguments->part_size = atoi(argv[2]);
-  call_arguments->message_offset = atoi(argv[3]);
+  call_arguments->message_length = atol(argv[1]);
+  call_arguments->part_size = atol(argv[2]);
+  call_arguments->message_offset = atol(argv[3]);
   call_arguments->input_file_path = argv[4];
   call_arguments->generated_message_path = getenv(GENERATED_INPUT_PATH_ENV_VAR);
   call_arguments->reassembled_message_path = getenv(REASSEMBLED_PATH_ENV_VAR);
@@ -68,6 +82,8 @@ int _generate_message(uint8_t const *message, const size_t message_length,
 
   unsigned int iteration_count = message_length / file_size;
   unsigned int remaining_bytes = message_length % file_size;
+
+  LOG_INFO("Iteration count: %u", iteration_count);
 
   size_t offset_bytes = 0;
   for (unsigned int i = 0; i < iteration_count; i++) {
@@ -105,13 +121,18 @@ int _init_message_order_array(unsigned int *message_order_array,
 
 int _send_messages_in_random_order(TransmitterData *const transmitter_data,
                                    unsigned int *message_order_array,
-                                   ReceiverData *const receiver_data) {
+                                   ReceiverData *const receiver_data,
+                                   unsigned long *timed_stages) {
+  unsigned long transmission_net_time_ms = 0;
+  unsigned long receiver_net_time = 0;
+  struct timespec start_time, end_time;
   if (!transmitter_data || !message_order_array || !receiver_data) {
     return MEMORY_ERROR;
   }
 
   Packet current_packet;
   int status_code;
+
   if ((status_code = transmitter_send_metadata_packet(
            transmitter_data, START, &current_packet)) != SUCCESS) {
     return status_code;
@@ -123,16 +144,22 @@ int _send_messages_in_random_order(TransmitterData *const transmitter_data,
   }
 
   for (unsigned int i = 0; i < transmitter_data->packet_count; i++) {
+    clock_gettime(CLOCK_REALTIME, &start_time);
     if ((status_code = transmitter_send_data_packet(
              transmitter_data, message_order_array[i], &current_packet)) !=
         SUCCESS) {
       return status_code;
     }
+    clock_gettime(CLOCK_REALTIME, &end_time);
+    transmission_net_time_ms += _get_time_difference_ms(start_time, end_time);
 
+    clock_gettime(CLOCK_REALTIME, &start_time);
     if ((status_code = receiver_receive_packet(receiver_data,
                                                &current_packet)) != SUCCESS) {
       return status_code;
     }
+    clock_gettime(CLOCK_REALTIME, &end_time);
+    receiver_net_time += _get_time_difference_ms(start_time, end_time);
   }
 
   if ((status_code = transmitter_send_metadata_packet(
@@ -143,6 +170,11 @@ int _send_messages_in_random_order(TransmitterData *const transmitter_data,
       SUCCESS) {
     return status_code;
   }
+
+  timed_stages[TRANSMISSION_MEAN_TIME] =
+      transmission_net_time_ms / transmitter_data->packet_count;
+  timed_stages[RECEIVAL_MEAN_TIME] =
+      receiver_net_time / transmitter_data->packet_count;
 
   return SUCCESS;
 }
@@ -159,7 +191,6 @@ int _compare_messages(const uint8_t *message,
       return DATA_INTEGRITY_ERROR;
     }
   }
-
   return SUCCESS;
 }
 
@@ -172,8 +203,13 @@ int benchmark_call(const int argc, char **argv) {
     return status_code;
   }
 
-  time_t start_time;
-  double timed_stages[STAGE_COUNT];
+  LOG_INFO("Message length: %zu", call_arguments.message_length);
+  LOG_INFO("Part size: %zu", call_arguments.part_size);
+  LOG_INFO("Message offset: %d", call_arguments.message_offset);
+  LOG_INFO("Input file path: %s", call_arguments.input_file_path);
+
+  struct timespec start_time, end_time;
+  unsigned long timed_stages[STAGE_COUNT];
   uint8_t *message = (uint8_t *)malloc(call_arguments.message_length);
   uint8_t *reassembled_message = NULL;
   unsigned int *message_order_array = (unsigned int *)malloc(
@@ -181,17 +217,21 @@ int benchmark_call(const int argc, char **argv) {
   TransmitterData transmitter_data;
   ReceiverData receiver_data;
 
+  LOG_INFO("Message length: %zu", call_arguments.message_length);
+
   if (!message) {
     return MEMORY_ERROR;
   }
-  start_time = time(NULL);
+  clock_gettime(CLOCK_REALTIME, &start_time);
   if ((status_code = _generate_message(message, call_arguments.message_length,
                                        call_arguments.message_offset,
                                        call_arguments.input_file_path)) !=
       SUCCESS) {
     return status_code;
   }
-  timed_stages[MESSAGE_GENERATED] = time(NULL) - start_time;
+  clock_gettime(CLOCK_REALTIME, &end_time);
+  timed_stages[MESSAGE_GENERATED] =
+      _get_time_difference_ms(start_time, end_time);
 
   FILE *generated_input_file_path =
       fopen(call_arguments.generated_message_path, "w");
@@ -201,13 +241,11 @@ int benchmark_call(const int argc, char **argv) {
   fwrite(message, 1, call_arguments.message_length, generated_input_file_path);
   fclose(generated_input_file_path);
 
-  start_time = time(NULL);
   if ((status_code = transmitter_init(&transmitter_data, message,
                                       call_arguments.message_length,
                                       call_arguments.part_size)) != SUCCESS) {
     return status_code;
   }
-  timed_stages[PACKET_BUFFER_INITIALIZED] = difftime(time(NULL), start_time);
 
   if ((status_code = receiver_init(&receiver_data)) != SUCCESS) {
     return status_code;
@@ -217,21 +255,25 @@ int benchmark_call(const int argc, char **argv) {
            message_order_array, transmitter_data.packet_count)) != SUCCESS) {
     return status_code;
   }
-  start_time = time(NULL);
+
+  clock_gettime(CLOCK_REALTIME, &start_time);
   if ((status_code = _send_messages_in_random_order(
-           &transmitter_data, message_order_array, &receiver_data)) !=
-      SUCCESS) {
+           &transmitter_data, message_order_array, &receiver_data,
+           timed_stages)) != SUCCESS) {
     return status_code;
   }
-  timed_stages[PACKET_BUFFER_RECEIVED] = difftime(time(NULL), start_time);
+  clock_gettime(CLOCK_REALTIME, &end_time);
+  timed_stages[TRANSMISSION_DONE] =
+      _get_time_difference_ms(start_time, end_time);
 
-  start_time = time(NULL);
+  clock_gettime(CLOCK_REALTIME, &start_time);
   if ((status_code = receiver_assemble_message(&reassembled_message,
                                                &receiver_data)) != SUCCESS) {
     return status_code;
   }
-
-  timed_stages[MESSAGE_REASSEMBLED] = difftime(time(NULL), start_time);
+  clock_gettime(CLOCK_REALTIME, &end_time);
+  timed_stages[MESSAGE_REASSEMBLED] =
+      _get_time_difference_ms(start_time, end_time);
 
   _print_report(timed_stages);
 

@@ -6,7 +6,6 @@ driver_path=$DRIVER_PATH
 message_length=$1
 part_size=$2
 message_offset=$3
-
 uuid=$(uuidgen)
 
 
@@ -15,7 +14,6 @@ output_file="/tmp/output-$uuid"
 
 echo "Files uuid: $uuid"
 echo "Running with message_length: $message_length, part_size: $part_size, message_offset: $message_offset"
-
 
 
 LOG_LEVEL=INFO GENERATED_INPUT_PATH="$generated_input_path" REASSEMBLED_INPUT_PATH="$output_file" "$driver_path" "$message_length" "$part_size" "$message_offset" "$template_file_path"
