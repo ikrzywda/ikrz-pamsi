@@ -18,7 +18,7 @@ echo "Running with message_length: $message_length, part_size: $part_size, messa
 
 
 
-LOG_LEVEL=INFO GENERATED_INPUT_PATH="$generated_input_path" REASSEMBLED_INPUT_PATH="$output_path" "$driver_path" "$message_length" "$part_size" "$message_offset" "$template_file_path" 
+LOG_LEVEL=INFO GENERATED_INPUT_PATH="$generated_input_path" REASSEMBLED_INPUT_PATH="$output_file" "$driver_path" "$message_length" "$part_size" "$message_offset" "$template_file_path"
 # Check if program ended successfully
 if [ $? -eq 0 ]; then
   echo "Program ended successfully"

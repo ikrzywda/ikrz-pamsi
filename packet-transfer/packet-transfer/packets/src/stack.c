@@ -5,7 +5,6 @@ int stack_init(Stack *const stack, const size_t capacity) {
     return MEMORY_ERROR;
   }
   if (capacity == 0) {
-    LOG_ERROR("Invalid capacity for stack");
     return INVALID_ARGUMENTS;
   }
 
@@ -50,12 +49,11 @@ int stack_pop_item(Stack *const stack, Packet *const item) {
   if (stack->head_index == -1) {
     return RANGE_ERROR;
   }
-  int status_code = SUCCESS;
   Packet *head_item = &stack->data_buffer[stack->head_index];
   memcpy(item, head_item, sizeof(Packet));
   stack->head_index -= 1;
 
-  if (stack->head_index < stack->capacity / 2) {
+  if (stack->head_index < (int)stack->capacity / 2) {
     size_t new_capacity = stack->capacity / 2;
     stack->data_buffer =
         (Packet *)realloc(stack->data_buffer, sizeof(Packet) * new_capacity);
@@ -64,15 +62,6 @@ int stack_pop_item(Stack *const stack, Packet *const item) {
     }
   }
   return SUCCESS;
-}
-
-void stack_print(Stack *const stack) {
-  if (!stack) {
-    return;
-  }
-  for (unsigned int i = 0; i <= stack->head_index; i++) {
-    Packet *item = &stack->data_buffer[i];
-  }
 }
 
 int stack_head(Stack *const stack, Packet *item) {

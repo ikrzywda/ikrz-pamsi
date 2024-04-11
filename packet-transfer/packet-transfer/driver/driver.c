@@ -31,16 +31,13 @@ int _init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
     return MEMORY_ERROR;
   }
 
-
   call_arguments->message_length = atoi(argv[1]);
   call_arguments->part_size = atoi(argv[2]);
   call_arguments->message_offset = atoi(argv[3]);
   call_arguments->input_file_path = argv[4];
   call_arguments->generated_message_path = getenv(GENERATED_INPUT_PATH_ENV_VAR);
-  call_arguments->reassembled_message_path = getenv(REASSEMBLED_PATH_ENV_VAR); 
-  LOG_DEBUG("Message length: %zu, Part size: %zu, Offset: %d, Input file path: %s, Generated message path: %s, Reassembled message path: %s",
-            call_arguments->message_length, call_arguments->part_size,
-            call_arguments->message_offset, call_arguments->input_file_path, call_arguments->generated_message_path, call_arguments->reassembled_message_path);
+  call_arguments->reassembled_message_path = getenv(REASSEMBLED_PATH_ENV_VAR);
+
   return SUCCESS;
 }
 
@@ -65,7 +62,6 @@ int _generate_message(uint8_t const *message, const size_t message_length,
   }
 
   if (fread(buffer, 1, file_size, input_file) != file_size) {
-    LOG_ERROR("Failed to read file");
     return GENERIC_ERROR;
   }
   fclose(input_file);
@@ -73,25 +69,21 @@ int _generate_message(uint8_t const *message, const size_t message_length,
   unsigned int iteration_count = message_length / file_size;
   unsigned int remaining_bytes = message_length % file_size;
 
-  LOG_DEBUG("Iteration count: %u, %u", iteration_count, remaining_bytes);
-
   size_t offset_bytes = 0;
   for (unsigned int i = 0; i < iteration_count; i++) {
-    LOG_DEBUG("Copying %zu bytes", file_size);
-    memcpy(message + offset_bytes, buffer, file_size);
+    memcpy((void *)(message + offset_bytes), (void *)buffer, file_size);
     offset_bytes += file_size;
   }
 
   // If there are remaining bytes to copy
   if (remaining_bytes > 0) {
-    LOG_DEBUG("Copying remaining %zu bytes", remaining_bytes);
-    memcpy(message + offset_bytes, buffer, remaining_bytes);
+    memcpy((void *)(message + offset_bytes), (void *)buffer, remaining_bytes);
   }
 
   return SUCCESS;
 }
 
-int _init_message_order_array(size_t *message_order_array,
+int _init_message_order_array(unsigned int *message_order_array,
                               const unsigned int packet_count) {
   if (!message_order_array) {
     return MEMORY_ERROR;
@@ -111,9 +103,9 @@ int _init_message_order_array(size_t *message_order_array,
   return SUCCESS;
 }
 
-int _send_messages_in_random_order(
-    const TransmitterData const *transmitter_data, size_t *message_order_array,
-    ReceiverData *const receiver_data) {
+int _send_messages_in_random_order(TransmitterData *const transmitter_data,
+                                   unsigned int *message_order_array,
+                                   ReceiverData *const receiver_data) {
   if (!transmitter_data || !message_order_array || !receiver_data) {
     return MEMORY_ERROR;
   }
@@ -130,7 +122,7 @@ int _send_messages_in_random_order(
     return status_code;
   }
 
-  for (size_t i = 0; i < transmitter_data->packet_count; i++) {
+  for (unsigned int i = 0; i < transmitter_data->packet_count; i++) {
     if ((status_code = transmitter_send_data_packet(
              transmitter_data, message_order_array[i], &current_packet)) !=
         SUCCESS) {
@@ -164,7 +156,6 @@ int _compare_messages(const uint8_t *message,
 
   for (size_t i = 0; i < message_length; i++) {
     if (message[i] != reassembled_message[i]) {
-      LOG_ERROR("Message comparison failed at index %zu", i);
       return DATA_INTEGRITY_ERROR;
     }
   }
@@ -202,7 +193,8 @@ int benchmark_call(const int argc, char **argv) {
   }
   timed_stages[MESSAGE_GENERATED] = time(NULL) - start_time;
 
-  FILE *generated_input_file_path = fopen(call_arguments.generated_message_path, "w");
+  FILE *generated_input_file_path =
+      fopen(call_arguments.generated_message_path, "w");
   if (!generated_input_file_path) {
     return MEMORY_ERROR;
   }
@@ -222,9 +214,8 @@ int benchmark_call(const int argc, char **argv) {
   }
 
   if ((status_code = _init_message_order_array(
-           message_order_array, transmitter_data.packet_count)) !=
-      status_code) {
-    return GENERIC_ERROR;
+           message_order_array, transmitter_data.packet_count)) != SUCCESS) {
+    return status_code;
   }
   start_time = time(NULL);
   if ((status_code = _send_messages_in_random_order(
@@ -239,6 +230,7 @@ int benchmark_call(const int argc, char **argv) {
                                                &receiver_data)) != SUCCESS) {
     return status_code;
   }
+
   timed_stages[MESSAGE_REASSEMBLED] = difftime(time(NULL), start_time);
 
   _print_report(timed_stages);

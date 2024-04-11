@@ -14,7 +14,8 @@ int main(int argc, char **argv) {
     LOG_INFO("Benchmark completed successfully");
     break;
   default:
-    LOG_ERROR(ERROR_MESSAGE(status_code));
+    LOG_ERROR("%s", ERROR_MESSAGE(status_code));
+    break;
   }
 
   return SUCCESS;

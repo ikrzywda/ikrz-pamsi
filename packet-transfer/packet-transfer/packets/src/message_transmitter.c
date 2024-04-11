@@ -6,19 +6,13 @@ int _copy_message_slice(const uint8_t *const message,
                         const size_t payload_length,
                         uint8_t *const payload_buffer) {
   if (!message || !payload_buffer) {
-    LOG_ERROR("Message or payload buffer is NULL %p %p", message,
-              payload_buffer);
     return MEMORY_ERROR;
   }
   if (message_length == 0 || payload_length == 0 ||
       payload_length > PAYLOAD_BUFFER_LENGTH) {
-    LOG_ERROR("Message length or payload length is 0, %zu %zu", message_length,
-              payload_length);
     return INVALID_ARGUMENTS;
   }
   if (payload_offset + payload_length > message_length) {
-    LOG_ERROR("Payload offset and length exceed message length %zu %zu %zu",
-              payload_offset, payload_length, message_length);
     return RANGE_ERROR;
   }
 
@@ -28,7 +22,7 @@ int _copy_message_slice(const uint8_t *const message,
 
 int transmitter_send_data_packet(TransmitterData *const transmitter_data,
                                  const unsigned int packet_index,
-                                 const Packet *packet) {
+                                 Packet *const packet) {
   if (!transmitter_data || !packet) {
     return MEMORY_ERROR;
   }
@@ -70,12 +64,10 @@ int transmitter_send_metadata_packet(
     const TransmitterData *const transmitter_data, const PacketType packet_type,
     Packet *const packet) {
   if (!transmitter_data || !packet) {
-    LOG_ERROR("Transmitter data or packet is NULL");
     return MEMORY_ERROR;
   }
 
   if (packet_type != START && packet_type != END) {
-    LOG_ERROR("Invalid packet type %d %d", packet_type, START);
     return INVALID_ARGUMENTS;
   }
 
@@ -92,7 +84,6 @@ int transmitter_init(TransmitterData *transmitter_data,
 
   if (message_length == 0 || max_payload_length == 0 ||
       max_payload_length > PAYLOAD_BUFFER_LENGTH) {
-    LOG_ERROR("Message length or max payload length is 0");
     return INVALID_ARGUMENTS;
   }
 
@@ -125,5 +116,3 @@ int destroy_transmitter_data(TransmitterData *transmitter_data) {
   free(transmitter_data->packet_send_state);
   return SUCCESS;
 }
-
-

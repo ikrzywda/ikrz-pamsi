@@ -1,17 +1,13 @@
 #include "message_receiver.h"
 
-int _init_result_message_buffer(uint8_t **output_message_buffer_ptr,
+int _init_result_message_buffer(uint8_t **const output_message_buffer_ptr,
                                 const ReceiverData *const receiver_data) {
   if (!output_message_buffer_ptr || *output_message_buffer_ptr != NULL ||
       !receiver_data) {
-    LOG_ERROR("Output message buffer or receiver data is NULL, %p %p %p",
-              output_message_buffer_ptr, receiver_data,
-              *output_message_buffer_ptr);
     return MEMORY_ERROR;
   }
 
   if (receiver_data->message_length == 0) {
-    LOG_ERROR("Message length is 0");
     return INVALID_ARGUMENTS;
   }
 
@@ -57,7 +53,6 @@ int receiver_receive_packet(ReceiverData *const receiver_data,
   switch (packet->type) {
   case START: {
     if (receiver_data->state != RECEIVER_STATE_AWAITING) {
-      LOG_DEBUG("Receiver is not in awaiting state");
       return DATA_INTEGRITY_ERROR;
     }
     receiver_data->state = RECEIVER_STATE_RECEIVING;
@@ -66,34 +61,28 @@ int receiver_receive_packet(ReceiverData *const receiver_data,
   }
   case DATA: {
     if (receiver_data->state != RECEIVER_STATE_RECEIVING) {
-      LOG_DEBUG("Receiver is not in receiving state");
       return DATA_INTEGRITY_ERROR;
     }
     return stack_push_item(&receiver_data->packet_stack, *packet);
   }
   case END: {
     if (receiver_data->state != RECEIVER_STATE_RECEIVING) {
-      LOG_DEBUG("Receiver is not in receiving state");
       return DATA_INTEGRITY_ERROR;
     }
     receiver_data->state = RECEIVER_STATE_READY;
     return SUCCESS;
   }
   }
-  LOG_ERROR("Invalid packet type");
   return INVALID_ARGUMENTS;
 }
 
-int receiver_assemble_message(uint8_t *const *output_message_buffer_ptr,
+int receiver_assemble_message(uint8_t **const output_message_buffer_ptr,
                               ReceiverData *receiver_data) {
   if (!output_message_buffer_ptr || !receiver_data) {
-    LOG_ERROR("Output message buffer or receiver data is NULL, %p %p",
-              output_message_buffer_ptr, receiver_data);
     return MEMORY_ERROR;
   }
 
   if (receiver_data->state != RECEIVER_STATE_READY) {
-    LOG_ERROR("Receiver is not ready to assemble message");
     return INVALID_ARGUMENTS;
   }
 
@@ -102,7 +91,6 @@ int receiver_assemble_message(uint8_t *const *output_message_buffer_ptr,
   if (status_code != SUCCESS) {
     return status_code;
   }
-  stack_print(&receiver_data->packet_stack);
   bool is_packet_stack_empty;
   Packet current_packet;
   while ((status_code = stack_is_empty(&receiver_data->packet_stack,
@@ -115,4 +103,5 @@ int receiver_assemble_message(uint8_t *const *output_message_buffer_ptr,
     memcpy(*output_message_buffer_ptr + current_packet.offset,
            current_packet.payload, current_packet.length);
   }
+  return SUCCESS;
 }
