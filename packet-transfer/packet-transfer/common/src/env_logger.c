@@ -1,11 +1,11 @@
 #include "env_logger.h"
 
 int init_env_logger() {
-  const char *env_log_level = getenv("LOG_LEVEL");
+  char *env_log_level = getenv("LOG_LEVEL");
 
   if (!env_log_level) {
     printf("Environment variables not set; failed to initialize env logger\n");
-    return DATA_INTEGRITY_ERROR;
+    env_log_level = "INFO";
   }
 
   if (strcmp(env_log_level, "DEBUG") == 0) {

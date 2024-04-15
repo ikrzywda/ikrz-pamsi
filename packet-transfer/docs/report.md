@@ -1,4 +1,12 @@
-# Projekt: przesyłanie pakietów
+---
+title: Przesyłanie pakietów
+author: Igor Krzywda (275480)
+date: today
+---
+
+# Projekt: pakiety
+
+> Igor Krzywda, 275480
 
 ## Specyfikacja
 

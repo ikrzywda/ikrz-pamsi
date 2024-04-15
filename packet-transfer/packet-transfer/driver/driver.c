@@ -49,8 +49,18 @@ int _init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
   call_arguments->part_size = atol(argv[2]);
   call_arguments->message_offset = atol(argv[3]);
   call_arguments->input_file_path = argv[4];
-  call_arguments->generated_message_path = getenv(GENERATED_INPUT_PATH_ENV_VAR);
-  call_arguments->reassembled_message_path = getenv(REASSEMBLED_PATH_ENV_VAR);
+
+  char *generated_input_path = getenv(GENERATED_INPUT_PATH_ENV_VAR);
+  if (!generated_input_path) {
+    generated_input_path = "generated_input.txt";
+  }
+  char *reassembled_input_path = getenv(REASSEMBLED_PATH_ENV_VAR);
+  if (!reassembled_input_path) {
+    reassembled_input_path = "reassembled_input.txt";
+  }
+
+  call_arguments->generated_message_path = generated_input_path;
+  call_arguments->reassembled_message_path = reassembled_input_path;
 
   return SUCCESS;
 }
@@ -76,6 +86,7 @@ int _generate_message(const uint8_t *message, const size_t message_length,
   if (!message) {
     return MEMORY_ERROR;
   }
+  int status_code;
 
   FILE *input_file = fopen(input_file_path, "rb");
   if (!input_file) {
@@ -96,11 +107,16 @@ int _generate_message(const uint8_t *message, const size_t message_length,
   }
   fclose(input_file);
 
-  if (offset != 0) {
-    if (_inplace_buffer_offset(buffer, file_size, offset) != SUCCESS) {
-      return GENERIC_ERROR;
-    }
-  }
+  // if (offset != 0) {
+
+  //   if ((status_code = _inplace_buffer_offset(buffer, file_size, offset)) !=
+  //   SUCCESS) {
+  //     return GENERIC_ERROR;
+  //   }
+  // }
+
+  LOG_DEBUG("Message length: %zu", message_length);
+  LOG_DEBUG("File size: %zu", file_size);
 
   unsigned int iteration_count = message_length / file_size;
   unsigned int remaining_bytes = message_length % file_size;

@@ -7,4 +7,3 @@
 typedef ReceiverData ReceiverData;
 typedef TransmitterData TransmitterData;
 typedef Packet Packet;
-
