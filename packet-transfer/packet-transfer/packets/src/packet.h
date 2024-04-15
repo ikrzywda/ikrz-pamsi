@@ -1,5 +1,4 @@
-#ifndef PACKET_H
-#define PACKET_H
+#pragma once
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -25,5 +24,3 @@ typedef struct {
 int packet_init(Packet *const packet_ptr, const PacketType type, const size_t message_length,
                 const size_t offset, const size_t payload_length,
                 const uint8_t *const payload);
-
-#endif  // PACKET_H

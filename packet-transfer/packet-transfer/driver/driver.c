@@ -55,7 +55,23 @@ int _init_call_arguments(CallArguments *call_arguments, int argc, char **argv) {
   return SUCCESS;
 }
 
-int _generate_message(uint8_t const *message, const size_t message_length,
+int _inplace_buffer_offset(uint8_t *const buffer, const size_t buffer_length,
+                           int offset) {
+  if (!buffer) {
+    return MEMORY_ERROR;
+  }
+
+  unsigned int absolute_offset = offset < 0 ? buffer_length - offset : offset;
+  if (absolute_offset > buffer_length) {
+    return RANGE_ERROR;
+  }
+
+  for (size_t i = 0; i < buffer_length - absolute_offset; i++) {
+    buffer[i] = buffer[i + absolute_offset];
+  }
+}
+
+int _generate_message(const uint8_t *message, const size_t message_length,
                       const int offset, const char *input_file_path) {
   if (!message) {
     return MEMORY_ERROR;
@@ -79,6 +95,12 @@ int _generate_message(uint8_t const *message, const size_t message_length,
     return GENERIC_ERROR;
   }
   fclose(input_file);
+
+  if (offset != 0) {
+    if (_inplace_buffer_offset(buffer, file_size, offset) != SUCCESS) {
+      return GENERIC_ERROR;
+    }
+  }
 
   unsigned int iteration_count = message_length / file_size;
   unsigned int remaining_bytes = message_length % file_size;
@@ -203,10 +225,10 @@ int benchmark_call(const int argc, char **argv) {
     return status_code;
   }
 
-  LOG_INFO("Message length: %zu", call_arguments.message_length);
-  LOG_INFO("Part size: %zu", call_arguments.part_size);
-  LOG_INFO("Message offset: %d", call_arguments.message_offset);
-  LOG_INFO("Input file path: %s", call_arguments.input_file_path);
+  LOG_DEBUG("Message length: %zu", call_arguments.message_length);
+  LOG_DEBUG("Part size: %zu", call_arguments.part_size);
+  LOG_DEBUG("Message offset: %d", call_arguments.message_offset);
+  LOG_DEBUG("Input file path: %s", call_arguments.input_file_path);
 
   struct timespec start_time, end_time;
   unsigned long timed_stages[STAGE_COUNT];
@@ -284,6 +306,10 @@ int benchmark_call(const int argc, char **argv) {
 
   fwrite(reassembled_message, 1, call_arguments.message_length, output_file);
   fclose(output_file);
+
+  free(message);
+  free(reassembled_message);
+  free(message_order_array);
 
   return SUCCESS;
 }

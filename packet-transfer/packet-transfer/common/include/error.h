@@ -1,5 +1,4 @@
-#ifndef ERROR_H
-#define ERROR_H
+#pragma once
 
 enum PacketTransferError {
   SUCCESS = 0,
@@ -24,5 +23,3 @@ static const char *error_messages[] = {"Success",
                                        "No data error"};
 
 #define ERROR_MESSAGE(error_code) error_messages[error_code]
-
-#endif // ERROR_H

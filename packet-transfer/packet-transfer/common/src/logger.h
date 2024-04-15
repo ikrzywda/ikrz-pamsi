@@ -1,5 +1,4 @@
-#ifndef LOGGER_H
-#define LOGGER_H
+#pragma once
 
 #include "error.h"
 #include "constants.h"
@@ -46,5 +45,3 @@ typedef struct {
 int init_logger(Logger *logger, LogLevel level);
 int format_message(char *buffer, LogLevel level, const char *message);
 int log_message(Logger *logger, LogLevel level, const char *message);
-
-#endif  // LOGGER_H

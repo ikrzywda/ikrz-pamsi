@@ -1,5 +1,4 @@
-#ifndef DRIVER_H
-#define DRIVER_H
+#pragma once
 
 #include "common.h"
 #include "packets.h"
@@ -35,5 +34,3 @@ typedef enum {
 
 int benchmark_call(int argc, char **argv);
 
-
-#endif // DRIVER_H

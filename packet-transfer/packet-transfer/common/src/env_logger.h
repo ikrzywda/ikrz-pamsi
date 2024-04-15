@@ -1,6 +1,5 @@
 
-#ifndef ENV_LOGGER_H
-#define ENV_LOGGER_H
+#pragma once
 
 #include "logger.h"
 
@@ -24,5 +23,3 @@ static Logger __ENV_LOGGER;
 
 
 int init_env_logger();
-
-#endif

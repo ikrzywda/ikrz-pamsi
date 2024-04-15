@@ -1,5 +1,4 @@
-#ifndef PACKETS_H
-#define PACKETS_H
+#pragma once
 
 #include "../src/message_receiver.h"
 #include "../src/message_transmitter.h"
@@ -9,4 +8,3 @@ typedef ReceiverData ReceiverData;
 typedef TransmitterData TransmitterData;
 typedef Packet Packet;
 
-#endif // PACKETS_H
