@@ -5,7 +5,8 @@
 #include <string_view>
 #include <vector>
 
-#include "algs/src/quicksort.cpp"
+#include "algs/quicksort.cpp"
+#include "algs/mergesort.cpp"
 
 int main() {
   // auto reader = read_csv("sample-data/projekt2_dane.csv");
@@ -32,10 +33,18 @@ int main() {
   // reader.value().dump_to_stream(stream);
 
   std::vector<int> dupa = {213,123,4,23,4,5,12,41,2,41,5,534,423,23};
+  std::vector<int> dupa_2 = {213,123,4,23,4,5,12,41,2,41,5,534,423,23};
 
   quicksort<int>(dupa, 0, dupa.size() - 1);
+  auto out = merge_sort<int>(dupa_2);
 
   for (auto el : dupa) {
+    std::cout << el << ' ';
+  }
+
+  std::cout << "\n";
+
+  for (auto el : out) {
     std::cout << el << ' ';
   }
 
