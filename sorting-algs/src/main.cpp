@@ -1,35 +1,29 @@
 #include "csv/include/reader.hpp"
+#include "algs/bucketsort.hpp"
+#include "algs/mergesort.hpp"
+#include "algs/quicksort.hpp"
 
-#include <iostream>
+#include <algorithm>
 #include <charconv>
+#include <iostream>
 #include <string_view>
 #include <vector>
 
-#include "algs/quicksort.hpp"
-#include "algs/mergesort.hpp"
-#include "algs/bucketsort.hpp"
+
 
 struct MovieRating {
   unsigned int id;
   std::string title;
   float rating;
-
 };
 
-template <>
-struct Sortable<MovieRating> {
-  static float key(const MovieRating &rating) {
-    return rating.rating;
-  }
+template <> struct Sortable<MovieRating> {
+  static float key(const MovieRating &rating) { return rating.rating; }
 };
 
-template <>
-struct Sortable<int> {
-  static int key(const int &el) {
-    return el;
-  }
+template <> struct Sortable<int> {
+  static int key(const int &el) { return el; }
 };
-
 
 MovieRating parse_movie_rating(const CSVRow &row) {
   MovieRating rating;
@@ -39,51 +33,95 @@ MovieRating parse_movie_rating(const CSVRow &row) {
   return rating;
 }
 
+float key(const MovieRating &rating) { return rating.rating; }
 
-float key(const MovieRating &rating) {
-  return rating.rating;
+std::optional<std::vector<MovieRating>>
+prepare_data(const std::string &filename, char delimiter,
+             unsigned int items_count, unsigned int shuffle_count) {
+  auto _reader = read_csv(filename, delimiter);
+  if (_reader == std::nullopt) {
+    std::cerr << "Failed to read CSV file" << std::endl;
+    return std::nullopt;
+  }
+  CSVReader reader = _reader.value();
+  filter_csv(reader, "rating",
+             [](const std::string &rating) { return rating.length() > 0; });
+
+  std::vector<MovieRating> ratings =
+      decode_to<MovieRating>(reader.data, parse_movie_rating);
+  std::vector<MovieRating> prepared_data;
+  for (unsigned int i = 0; i < items_count; i++) {
+    prepared_data.push_back(ratings[i % ratings.size()]);
+  }
+
+  for (unsigned int i = 0; i < shuffle_count; i++) {
+    unsigned int index1 = rand() % reader.data.size();
+    unsigned int index2 = rand() % reader.data.size();
+    std::swap(prepared_data[index1], prepared_data[index2]);
+  }
+
+  return prepared_data;
 }
 
+#include <chrono>
 
+std::chrono::milliseconds sort_data(std::vector<MovieRating> &data, const std::string &sort_type) {
+  auto start = std::chrono::high_resolution_clock::now();
+  if (sort_type == "quicksort") {
+    quicksort<MovieRating, float>(data, 0, data.size() - 1);
+  } else if (sort_type == "mergesort") {
+    data = merge_sort<MovieRating, float>(data);
+  } else if (sort_type == "bucketsort") {
+    data = bucketsort<MovieRating, float>(data, 10);
+  }
+  auto end = std::chrono::high_resolution_clock::now();
+  auto sort_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  return sort_time_ms;
+}
 
-int main() {
-  auto reader = read_csv("sample-data/projekt2_dane.csv");
-  if (reader == std::nullopt) {
-    std::cerr << "Failed to read CSV file" << std::endl;
+int main(int argc, char **argv) {
+  if (argc < 5) {
+    std::cerr << "Usage: " << argv[0]
+              << " <filename> <delimiter> <items_count> <shuffle_count> "
+                 "<sort_type> <repeat_count>"
+              << std::endl;
     return 1;
   }
-  filter_csv(reader.value(), "rating", [](const std::string &rating) {
-    return rating.length() > 0;
-  });
-  std::cout << "Decoding data" << std::endl;
-  std::vector<MovieRating> ratings = decode_to<MovieRating>(reader->data, parse_movie_rating);
-  std::cout << "Sorting data" << std::endl;
-  time_t start = time(0);
-  quicksort<MovieRating, float>(ratings, 0, ratings.size() - 1);
-  // merge_sort<MovieRating, float>(ratings);
-  // auto sorted = bucketsort<MovieRating, float>(ratings, 10);
-  // auto sorted = merge_sort<MovieRating, float>(ratings);
+
+  std::string filename = argv[1];
+  int sort_key_pos = std::stoi(argv[2]);
+  unsigned int items_count = std::stoi(argv[3]);
+  std::string sort_type = argv[4];
+  unsigned int shuffle_passes = 0;
+
+  if (sort_type != "quicksort" && sort_type != "mergesort" &&
+      sort_type != "bucketsort") {
+    std::cerr << "Invalid sort type" << std::endl;
+    return 1;
+  }
+
+  if (argc >= 6) {
+    shuffle_passes = std::stoi(argv[5]);
+  }
+  if (argc >= 7) {
+    srand(std::stoi(argv[6]));
+  }
 
 
-  time_t end = time(0);
-
-  std::cout << "Quicksort took " << end - start << " seconds" << std::endl;
+  auto _data = prepare_data(filename, ',', items_count, shuffle_passes);
+  if (_data == std::nullopt) {
+    return 1;
+  }
+  std::cout << "Data prepared" << std::endl;
+  std::vector<MovieRating> data = _data.value();
+  std::cout << "Data size: " << data.size() << std::endl;
+  std::chrono::milliseconds sort_time = sort_data(data, sort_type);
+  std::cout << "Sort time: " << sort_time.count() << "ms" << std::endl;
 
   std::fstream file("sorted.csv", std::ios::out);
-
-  for (const auto &rating : ratings) {
+  for (const auto &rating : data) {
     file << rating.id << "," << rating.title << "," << rating.rating << std::endl;
   }
-
-
-  std::vector<int> dupa = {123,412,4,124,321,312,5,43,4,3,3};
-  quicksort<int, int>(dupa, 0, dupa.size() - 1);
-  for (const auto &el : dupa) {
-    std::cout << el << std::endl;
-  }
-
-  // auto sorted = bucketsort<MovieRating, float>(ratings, 10);
-
 
   return 0;
 }

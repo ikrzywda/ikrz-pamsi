@@ -20,7 +20,12 @@ EXECUTABLE = $(BIN_DIR)/program
 
 .PHONY: all clean
 
+
+
 all: $(EXECUTABLE)
+
+format: $(SRCS)
+	clang-format -i $^ -style=llvm
 
 $(EXECUTABLE): $(OBJS)
 	@mkdir -p $(BIN_DIR)
