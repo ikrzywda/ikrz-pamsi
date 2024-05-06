@@ -43,8 +43,8 @@ std::vector<T> merge_sort(std::vector<T> &vec) {
     std::vector<T> left(vec.begin(), vec.begin() + half);
     std::vector<T> right(vec.begin() + half, vec.end());
 
-    auto sorted_left = merge_sort(left);
-    auto sorted_right = merge_sort(right);
+    auto sorted_left = merge_sort<T, K>(left);
+    auto sorted_right = merge_sort<T, K>(right);
 
-    return merge(sorted_left, sorted_right);
+    return merge<T, K>(sorted_left, sorted_right);
 }

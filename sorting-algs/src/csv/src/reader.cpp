@@ -71,15 +71,23 @@ std::optional<CSVReader> read_csv(const std::string &filename, char delimiter) {
 int filter_csv(CSVReader &reader, const std::string &column_name, const std::function<bool(const std::string &)> &predicate) {
   int count = 0;
   auto _column_index = reader.get_column_index(column_name);
+  std::cout << _column_index.value() << std::endl;
   std::vector<std::vector<std::string>> filtered_data = std::vector<std::vector<std::string>>(reader.data.size());
+  bool is_header = true;
 
   if (!_column_index.has_value()) {
     return -1;
   }
   unsigned int column_index = _column_index.value();
   for (const auto &row : reader.data) {
+
     if (row.size() <= column_index) {
       return -1;
+    }
+
+    if (is_header) {
+      is_header = false;
+      continue;
     }
 
     if (predicate(row[column_index])) {

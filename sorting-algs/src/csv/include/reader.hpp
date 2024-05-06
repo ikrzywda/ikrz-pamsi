@@ -5,6 +5,7 @@
 #include <fstream>
 #include <optional>
 #include <numeric>
+#include <iostream>
 
 typedef std::vector<std::string> CSVRow;
 typedef std::vector<CSVRow> CSVData;
