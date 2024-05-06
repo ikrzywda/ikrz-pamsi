@@ -1,17 +1,19 @@
 #pragma once
 
+#include "sortable.hpp"
+
 #include <vector>
 #include <numeric>
 #include <iostream>
 
-template <typename T>
+template <typename T, typename K>
 std::vector<T> merge(std::vector<T> &vec_left, std::vector<T> &vec_right) {
     std::vector<T> sorted;
     unsigned int il = 0;
     unsigned int ir = 0;
 
     while (il < vec_left.size() && ir < vec_right.size()) {
-        if (vec_left[il] <= vec_right[ir]) {
+        if (Sortable<T>::key(vec_left[il]) <= Sortable<T>::key(vec_right[ir])) {
             sorted.push_back(vec_left[il]);
             il++;
         } else {
@@ -31,7 +33,7 @@ std::vector<T> merge(std::vector<T> &vec_left, std::vector<T> &vec_right) {
     return sorted;
 }
 
-template <typename T>
+template <typename T, typename K>
 std::vector<T> merge_sort(std::vector<T> &vec) {
     if (vec.size() <= 1) {
         return vec;

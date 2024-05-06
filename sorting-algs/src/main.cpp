@@ -9,52 +9,48 @@
 #include "algs/mergesort.hpp"
 #include "algs/bucketsort.hpp"
 
+struct MovieRating {
+  unsigned int id;
+  std::string title;
+  float rating;
+
+};
+
+template <>
+struct Sortable<MovieRating> {
+  static float key(const MovieRating &rating) {
+    return rating.rating;
+  }
+
+
+};
+
+
+MovieRating parse_movie_rating(const CSVRow &row) {
+  MovieRating rating;
+  rating.id = std::stoi(row[0]);
+  rating.title = row[1];
+  rating.rating = std::stof(row[2]);
+  return rating;
+}
+
+
+float key(const MovieRating &rating) {
+  return rating.rating;
+}
+
+
+
 int main() {
-  // auto reader = read_csv("sample-data/projekt2_dane.csv");
-  // if (!reader.has_value()) {
-  //   std::cout << "Error reading CSV file" << std::endl;
-  //   std::cout << "Current working directory: " << std::filesystem::current_path() << std::endl;
-  //   return 1;
-  // }
 
-  // int status_code = filter_csv(reader.value(), "rating", [](const std::string &name) {
-  //   float rating;
-  //   if (sscanf(name.c_str(), "%f", &rating) != 1) {
-  //     return false;
-  //   }
-  //   return rating > 4.5;
-  // });
-
-  // if (status_code != 0) {
-  //   std::cout << "Error filtering CSV" << std::endl;
-  //   return 1;
-  // }
-
-  // std::ostream &stream = std::cout;
-  // reader.value().dump_to_stream(stream);
-
-  std::vector<int> dupa = {213,123,4,23,4,5,12,41,2,41,5,534,423,23};
-  std::vector<int> dupa_2 = {213,123,4,23,4,5,12,41,2,41,5,534,423,23};
-  std::vector<int> dupa_3 = {213,123,4,23,4,5,12,41,2,41,5,534,423,23};
-
-  quicksort<int>(dupa, 0, dupa.size() - 1);
-  auto out = merge_sort<int>(dupa_2);
-
-  for (auto el : dupa) {
-    std::cout << el << ' ';
+  auto reader = read_csv("sample-data/projekt2_dane.csv");
+  if (reader == std::nullopt) {
+    std::cerr << "Failed to read CSV file" << std::endl;
+    return 1;
   }
 
-  std::cout << "\n";
-
-  for (auto el : out) {
-    std::cout << el << ' ';
-  }
-
-  std::cout << "\n";
-  auto out_2 = bucketsort<int>(dupa_3, 20);
-  for (auto el : out_2) {
-    std::cout << el << ' ';
-  }
+  std::vector<MovieRating> ratings = decode_to<MovieRating>(reader->data, parse_movie_rating);
+  auto sorted = bucketsort<MovieRating, float>(ratings, 10);
 
 
   return 0;
