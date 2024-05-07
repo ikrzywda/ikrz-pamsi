@@ -1,8 +1,10 @@
+# Wygenerowane z Github Copilot
+
 # Compiler
-CXX = clang++
+CXX = g++
 
 # Compiler flags
-CXXFLAGS = -std=c++17 -Wall -Wextra -O2
+CXXFLAGS = -std=c++17 -Wall -Wextra -fsanitize=address 
 
 # Directories
 SRC_DIR = src

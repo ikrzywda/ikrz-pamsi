@@ -25,8 +25,9 @@ int filter_csv(CSVReader &reader, const std::string &column, const std::function
 template <typename T>
 std::vector<T> decode_to(CSVData &data, std::function<T(const CSVRow &)> decoder) {
   std::vector<T> decoded;
-  for (const auto &row : data) {
-    decoded.push_back(decoder(row));
+  for (const CSVRow &row : data) {
+    T _decoded = decoder(row);
+    decoded.push_back(_decoded);
   }
   return decoded;
 }
