@@ -22,9 +22,7 @@ Quicksort jset algorytmem "divide and conquer", polega na wyborze pivota, który
 
 ### Złożoności względem długości listy
 
-- **najgorszy przypadek** $\mathcal{O}(N^2)$
-- **średni przypadek** $\mathcal{O}(Nlog(N)$
-- **najlepszy przypadek** $\mathcal{O}(Nlog(N)$
+![Mergesort Results](assets/qsort.png)
 
 ## Mergesort
 
@@ -34,9 +32,7 @@ Mergesort jest algorytmem "divide and conquer", polega na rekurencyjnym dzieleni
 
 ### Złożoności względem długości listy
 
-- **najgorszy przypadek** $\mathcal{O}(Nlog(N))$
-- **średni przypadek** $\mathcal{\Omega}(Nlog(N)$
-- **najlepszy przypadek** $\mathcal{\Theta}(Nlog(N)$
+![Mergesort Results](assets/msort.png)
 
 ## Bucketsort
 
@@ -46,9 +42,7 @@ Bucketsort polega na podzieleniu sortowanej listy na "buckety", które są podli
 
 ### Złożoności względem długości listy (N) oraz liczby bucketów (K)
 
-- **najgorszy przypadek** $\mathcal{O}(N^2)$
-- **średni przypadek** $\mathcal{O}(N + \frac{Nlog(N)}{K} + K)$
-- **najlepszy przypadek** $\mathcal{O}(N + \frac{Nlog(N)}{K} + K)$
+![Mergesort Results](assets/bsort.png)
 
 ## Eksperymenty
 
