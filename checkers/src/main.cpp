@@ -1,6 +1,6 @@
 #include <stdio.h>
-#include "include/checkers.h"
 
+#include "include/checkers.h"
 
 void print_checkers_board(Board board) {
   for (int row = 0; row < BOARD_SIDE_LENGTH; ++row) {
@@ -16,6 +16,4 @@ void print_checkers_board(Board board) {
   }
 }
 
-int main(int argc, char **argv) {
-  return 0;
-}
+int main(int argc, char **argv) { return 0; }
