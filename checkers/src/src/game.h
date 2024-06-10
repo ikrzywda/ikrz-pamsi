@@ -147,3 +147,4 @@ private:
 };
 
 } // namespace Checkers::NotationEncoder
+
