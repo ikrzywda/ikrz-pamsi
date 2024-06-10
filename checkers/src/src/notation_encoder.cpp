@@ -2,13 +2,13 @@
 
 namespace Checkers::NotationEncoder {
 
-std::string encode_play(const FullPlay const& play) {
+std::string encode_play(const FullPlay const &play) {
   std::vector<std::string> encoded_moves;
   for (auto &move : play) {
     auto [board_move, move_type] = move;
     std::string encoded_move = "";
 
-    if (encoded_moves.size() == 0) { 
+    if (encoded_moves.size() == 0) {
       encoded_move += std::to_string(board_move.first.first);
       encoded_move += std::to_string(board_move.first.second);
     }
@@ -18,7 +18,8 @@ std::string encode_play(const FullPlay const& play) {
     encoded_move += std::to_string(board_move.second.second);
     encoded_moves.push_back(encoded_move);
   }
-  return std::accumulate(encoded_moves.begin(), encoded_moves.end(), std::string(""));
+  return std::accumulate(encoded_moves.begin(), encoded_moves.end(),
+                         std::string(""));
 }
 
 std::vector<Token> &tokenize_move(std::string const &move) {
@@ -157,3 +158,4 @@ ParseResult<FullPlay> MoveDecoder::decode_move(std::string const &move) {
   MoveDecoder decoder = MoveDecoder(move);
   return decoder.decode_play();
 };
+}; // namespace Checkers::NotationEncoder

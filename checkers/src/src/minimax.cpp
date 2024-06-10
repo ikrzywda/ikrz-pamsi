@@ -22,15 +22,15 @@ int Minimax::minimax(CheckersGame &game, int alpha, int beta, int depth,
     return evaluate_board(game.game_board);
   }
 
-  Checkers::PossibleMoves &possible_moves = game.get_possible_moves(player);
-  if (possible_moves.empty()) {
+  auto possible_moves = game.get_possible_moves(player);
+  if (!possible_moves.has_value() || possible_moves.value().empty()) {
     return evaluate_board(game.game_board);
   }
 
   switch (player) {
   case WHITE_PLAYER: {
     int max_eval = INT_MIN;
-    for (auto &move : possible_moves) {
+    for (auto &move : possible_moves.value()) {
       auto [starting_position, target_positions] = move;
       for (auto &target_position : target_positions) {
         Checkers::CheckersGame new_game = Checkers::CheckersGame(game);
@@ -48,7 +48,7 @@ int Minimax::minimax(CheckersGame &game, int alpha, int beta, int depth,
   }
   case BLACK_PLAYER: {
     int min_eval = INT_MAX;
-    for (auto &move : possible_moves) {
+    for (auto &move : possible_moves.value()) {
       auto [starting_position, target_positions] = move;
       for (auto &target_position : target_positions) {
         Checkers::CheckersGame new_game = Checkers::CheckersGame(game);

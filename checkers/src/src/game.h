@@ -3,12 +3,12 @@
 #include <limits.h>
 
 #include <map>
+#include <numeric>
 #include <optional>
 #include <stdexcept>
 #include <string>
 #include <tuple>
 #include <vector>
-#include <numeric>
 
 #include "board.h"
 
@@ -35,8 +35,7 @@ enum MoveType {
 
 using FieldCoordinates = std::pair<int, int>;
 
-using PossibleMoves =
-    std::map<FieldCoordinates, std::vector<FieldCoordinates> &>;
+using PossibleMoves = std::map<FieldCoordinates, std::vector<FieldCoordinates>>;
 
 using BoardMove = std::pair<FieldCoordinates, FieldCoordinates>;
 using Play = std::pair<BoardMove, MoveType>;
@@ -55,9 +54,11 @@ struct CheckersGame {
 
   CheckersGame();
   CheckersGame(const CheckersGame &game);
-  std::optional<PossibleMoves &>
+
+  std::optional<PossibleMoves>
   get_possible_moves(Player player,
                      std::optional<Play> last_capture_play = std::nullopt);
+
   void make_move(FieldCoordinates start_field, FieldCoordinates target_field);
   FullPlay play(int depth, Player player);
 
@@ -65,25 +66,20 @@ private:
   static Board reference_board;
   void init_checkers_game_board();
 
-  std::vector<FieldCoordinates> &
+  std::vector<FieldCoordinates>
   get_moves_for_piece(FieldCoordinates field_coordinates);
 
-  std::optional<std::vector<FieldCoordinates> &>
-  get_possible_moves_for_piece(Player player,
-                               FieldCoordinates field_coordinates,
-                               bool captures_only = false);
-  BoardField get_game_field(int field_index);
+  std::optional<std::vector<FieldCoordinates>> get_possible_moves_for_piece(
+      Player player, FieldCoordinates field_coordinates, bool captures_only);
   FieldCoordinates get_field_coordinates(int field_index);
 
   MoveType get_move_type(FieldCoordinates start_field,
                          FieldCoordinates target_field);
 
-  std::optional<Play>
-  play_minimax(FullPlay &play, int depth, Player player,
-               std::optional<Play> last_play = std::nullopt);
-  std::optional<Play>
-  make_minimax_move(int depth, Player player,
-                    std::optional<Play> last_play = std::nullopt);
+  std::optional<Play> play_minimax(FullPlay &play, int depth, Player player,
+                                   std::optional<Play> last_play);
+  std::optional<Play> make_minimax_move(int depth, Player player,
+                                        std::optional<Play> last_play);
   void finish_game(GameStatus status);
 };
 
@@ -134,6 +130,7 @@ std::vector<Token> &tokenize_move(std::string const &move);
 
 struct MoveDecoder {
   static ParseResult<FullPlay> decode_move(std::string const &move);
+
 private:
   std::string move;
   std::vector<Token> tokens;
@@ -143,11 +140,10 @@ private:
   Token get_next_token();
   Token get_current_token();
   bool has_next_token();
-  
+
   ParseResult<FieldCoordinates> decode_position();
   ParseResult<FullPlay> decode_play();
   ParseResult<MoveType> decode_move_type();
-}; 
+};
 
 } // namespace Checkers::NotationEncoder
-

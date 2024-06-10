@@ -6,10 +6,9 @@ CXXFLAGS = -Wall -Wextra -std=c++17 -I./src/game
 
 # Directories
 SRCDIR = src
-GAMEDIR = src/game
 
 # Source files
-SOURCES = $(SRCDIR)/main.cpp $(GAMEDIR)/game.cpp
+SOURCES = $(SRCDIR)/main.cpp $(SRCDIR)/src/game.cpp $(SRCDIR)/src/minimax.cpp $(SRCDIR)/src/notation_encoder.cpp
 
 # Object files
 OBJECTS = $(SOURCES:.cpp=.o)
@@ -35,6 +34,11 @@ $(GAMEDIR)/game.o: $(GAMEDIR)/game.cpp
 # Clean up
 clean:
 	rm -f $(OBJECTS) $(EXECUTABLE)
+
+# Format code
+format:
+	clang-format -i --style llvm $()
+
 
 # Phony targets
 .PHONY: all clean
