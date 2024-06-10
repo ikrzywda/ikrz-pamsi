@@ -1,6 +1,7 @@
 #include "game.h"
 
 #include <stdexcept>
+#include <string>
 
 namespace Checkers::Utilities {
 
@@ -27,28 +28,6 @@ void get_possible_fields(std::vector<FieldCoordinates> &possible_fields,
 
 namespace Checkers {
 
-void CheckersGame::init_checkers_reference_board() {
-  for (int i = 0; i < BOARD_SIDE_LENGTH; ++i) {
-    reference_board[0][i] = REF_OUTSIDE_FIELD;
-    reference_board[BOARD_SIDE_LENGTH - 1][i] = REF_OUTSIDE_FIELD;
-    reference_board[i][0] = REF_OUTSIDE_FIELD;
-    reference_board[i][BOARD_SIDE_LENGTH - 1] = REF_OUTSIDE_FIELD;
-  }
-
-  int field_index = 0;
-  for (int row = 0; row < ACTIVE_BOARD_SIDE_LENGTH; ++row) {
-    for (int col = 0; col < ACTIVE_BOARD_SIDE_LENGTH; ++col) {
-      int _row = row + 1;
-      int _col = col + 1;
-
-      if (Utilities::is_field_black(row, col)) {
-        reference_board[_row][_col] = ++field_index;
-      } else {
-        reference_board[_row][_col] = REF_WHITE_FIELD;
-      }
-    }
-  }
-}
 
 void CheckersGame::init_checkers_game_board() {
   for (int i = 0; i < BOARD_SIDE_LENGTH; ++i) {
@@ -192,6 +171,7 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
         return start_field_type == BLACK_PIECE ? BLACK_CAPTURE : WHITE_CAPTURE;
       }
     }
+    break;
   }
   case BLACK_KING:
   case WHITE_KING: {
@@ -204,43 +184,90 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
         return start_field_type == BLACK_KING ? BLACK_CAPTURE : WHITE_CAPTURE;
       }
     }
+    break;
   }
   }
   return start_field_type == BLACK_PIECE ? BLACK_MOVE : WHITE_MOVE;
 }
 
-PossibleMoves &CheckersGame::get_possible_moves(Player player) {
-  PossibleMoves *possible_moves = new PossibleMoves();
+std::optional<std::vector<FieldCoordinates> &>
+CheckersGame::get_possible_moves_for_piece(Player player,
+                                           FieldCoordinates field_coordinates,
+                                           bool captures_only = false) {
+  const auto [row, col] = field_coordinates;
+  if (!Utilities::is_field_black(row, col)) {
+    return std::nullopt;
+  }
 
+  int field = game_board[row][col];
+  if (field == EMPTY_FIELD) {
+    return std::nullopt;
+  }
+
+  BoardField field_type = (BoardField)field;
+  if (player == BLACK_PLAYER && field_type != BLACK_PIECE &&
+      field_type != BLACK_KING) {
+    return std::nullopt;
+  }
+
+  if (player == WHITE_PLAYER && field_type != WHITE_PIECE &&
+      field_type != WHITE_KING) {
+    return std::nullopt;
+  }
+
+  FieldCoordinates field_coordinates = FieldCoordinates(row, col);
+  std::vector<FieldCoordinates> moves = get_moves_for_piece(field_coordinates);
+
+  if (captures_only) {
+    moves.erase(std::remove_if(moves.begin(), moves.end(),
+                               [this, field_coordinates](
+                                   FieldCoordinates target_field_coordinates) {
+                                 return get_move_type(
+                                            field_coordinates,
+                                            target_field_coordinates) !=
+                                        BLACK_CAPTURE;
+                               }),
+                moves.end());
+  }
+
+  return moves;
+}
+
+void CheckersGame::finish_game(GameStatus status) { game_status = status; }
+
+std::optional<PossibleMoves &> CheckersGame::get_possible_moves(
+    Player player, std::optional<Play> last_capture_play = std::nullopt) {
+  if (last_capture_play.has_value()) {
+    const auto &[last_move, last_move_type] = last_capture_play.value();
+    if (player == WHITE_PLAYER && last_move_type != WHITE_CAPTURE ||
+        player == BLACK_PLAYER && last_move_type != BLACK_CAPTURE) {
+      return std::nullopt;
+    }
+    const auto &[start_field, _] = last_move;
+    FieldCoordinates field_coordinates = start_field;
+    auto moves_for_field =
+        get_possible_moves_for_piece(player, start_field, true);
+    if (moves_for_field.has_value()) {
+      PossibleMoves *_possible_moves = new PossibleMoves();
+      _possible_moves->emplace(start_field, moves_for_field.value());
+      return *_possible_moves;
+    }
+    return std::nullopt;
+  }
+
+  PossibleMoves *possible_moves = new PossibleMoves();
   for (int row = 0; row < ACTIVE_BOARD_SIDE_LENGTH; ++row) {
     for (int col = 0; col < ACTIVE_BOARD_SIDE_LENGTH; ++col) {
       int _row = row + 1;
       int _col = col + 1;
 
-      if (!Utilities::is_field_black(_row, _col)) {
+      const FieldCoordinates field_coordinates = FieldCoordinates(_row, _col);
+      auto moves_for_field =
+          get_possible_moves_for_piece(player, field_coordinates);
+      if (!moves_for_field.has_value()) {
         continue;
       }
-
-      int field = game_board[_row][_col];
-      if (field == EMPTY_FIELD) {
-        continue;
-      }
-
-      BoardField field_type = (BoardField)field;
-      if (player == BLACK_PLAYER && field_type != BLACK_PIECE &&
-          field_type != BLACK_KING) {
-        continue;
-      }
-
-      if (player == WHITE_PLAYER && field_type != WHITE_PIECE &&
-          field_type != WHITE_KING) {
-        continue;
-      }
-
-      FieldCoordinates field_coordinates = FieldCoordinates(_row, _col);
-      std::vector<FieldCoordinates> moves =
-          get_moves_for_piece(field_coordinates);
-      possible_moves->emplace(field_coordinates, moves);
+      possible_moves->emplace(field_coordinates, moves_for_field.value());
     }
   }
 
@@ -272,31 +299,22 @@ void CheckersGame::make_move(FieldCoordinates start_field,
     game_board[target_row][target_col] = start_field_type;
     game_board[start_row][start_col] = EMPTY_FIELD;
     game_board[jumped_field_row][jumped_field_col] = EMPTY_FIELD;
-
-    PossibleMoves &possible_moves = get_possible_moves(player);
-    if (possible_moves.find(target_field) != possible_moves.end()) {
-      FieldCoordinates new_start_field = target_field;
-      std::vector<FieldCoordinates> new_target_fields =
-          possible_moves.at(target_field);
-      for (auto &new_target_field : new_target_fields) {
-        if (get_move_type(new_start_field, new_target_field) == INVALID_MOVE) {
-          continue;
-        }
-        if (get_move_type(new_start_field, new_target_field) == BLACK_CAPTURE ||
-            get_move_type(new_start_field, new_target_field) == WHITE_CAPTURE) {
-          make_move(new_start_field, new_target_field);
-        }
-      }
-    }
   }
 }
 
-void CheckersGame::make_minimax_move(int depth, Player player) {
+std::optional<Play>
+CheckersGame::make_minimax_move(int depth, Player player,
+                                std::optional<Play> last_play) {
   BoardMove best_move;
-  PossibleMoves &possible_moves = get_possible_moves(player);
+  const auto &possible_moves = get_possible_moves(player, last_play);
+
+  if (!possible_moves.has_value()) {
+    return std::nullopt;
+  }
+
   int best_score = player == WHITE_PLAYER ? INT_MIN : INT_MAX;
 
-  for (auto &move : possible_moves) {
+  for (auto &move : possible_moves.value()) {
     auto [starting_position, target_positions] = move;
     for (auto &target_position : target_positions) {
       CheckersGame new_game = CheckersGame(*this);
@@ -318,11 +336,12 @@ void CheckersGame::make_minimax_move(int depth, Player player) {
       }
     }
   }
+  MoveType move_type = get_move_type(best_move.first, best_move.second);
   make_move(best_move.first, best_move.second);
+  return Play(best_move, move_type);
 }
 
 CheckersGame::CheckersGame() {
-  init_checkers_reference_board();
   init_checkers_game_board();
 }
 
@@ -334,4 +353,70 @@ CheckersGame::CheckersGame(const CheckersGame &game) {
   }
   GameStatus game_status = game.game_status;
 }
+
+std::optional<Play>
+CheckersGame::play_minimax(FullPlay &play, int depth, Player player,
+                           std::optional<Play> last_play = std::nullopt) {
+  std::optional<Play> new_play = std::nullopt;
+  if (last_play.has_value()) {
+    new_play = make_minimax_move(depth, player, last_play);
+  } else {
+    new_play = make_minimax_move(depth, player);
+  }
+
+  if (!new_play.has_value()) {
+    return std::nullopt;
+  }
+
+  play.push_back(new_play.value());
+  const auto &[_, move_type] = new_play.value();
+  if (move_type == BLACK_CAPTURE || move_type == WHITE_CAPTURE) {
+    return play_minimax(play, depth, player, new_play);
+  }
+
+  return new_play;
+}
+
+FullPlay CheckersGame::play(int depth, Player player) {
+  FullPlay *play = new FullPlay();
+  play_minimax(*play, depth, player);
+
+  if (play->empty()) {
+    finish_game(player == WHITE_PLAYER ? BLACK_WON : WHITE_WON);
+  }
+
+  return *play;
+}
+
+Board const& CheckersGame::lazy_get_reference_board() { 
+  if (reference_board[0][0] == REF_OUTSIDE_FIELD) {
+    return reference_board;
+  }
+
+  for (int i = 0; i < BOARD_SIDE_LENGTH; ++i) {
+    reference_board[0][i] = REF_OUTSIDE_FIELD;
+    reference_board[BOARD_SIDE_LENGTH - 1][i] = REF_OUTSIDE_FIELD;
+    reference_board[i][0] = REF_OUTSIDE_FIELD;
+    reference_board[i][BOARD_SIDE_LENGTH - 1] = REF_OUTSIDE_FIELD;
+  }
+
+  int field_index = 0;
+  for (int row = 0; row < ACTIVE_BOARD_SIDE_LENGTH; ++row) {
+    for (int col = 0; col < ACTIVE_BOARD_SIDE_LENGTH; ++col) {
+      int _row = row + 1;
+      int _col = col + 1;
+
+      if (Utilities::is_field_black(row, col)) {
+        reference_board[_row][_col] = ++field_index;
+      } else {
+        reference_board[_row][_col] = REF_WHITE_FIELD;
+      }
+    }
+  }
+
+  return reference_board;
+  }
+
 } // namespace Checkers
+
+

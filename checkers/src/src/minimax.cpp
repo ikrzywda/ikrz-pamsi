@@ -17,7 +17,7 @@ int Minimax::evaluate_board(Board &board) {
 }
 
 int Minimax::minimax(CheckersGame &game, int alpha, int beta, int depth,
-            Player player) {
+                     Player player) {
   if (!depth) {
     return evaluate_board(game.game_board);
   }
@@ -67,4 +67,4 @@ int Minimax::minimax(CheckersGame &game, int alpha, int beta, int depth,
   }
 }
 
-}; // namespace Checkers::Minimax
+}; // namespace Checkers
