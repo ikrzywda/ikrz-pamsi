@@ -28,7 +28,6 @@ void get_possible_fields(std::vector<FieldCoordinates> &possible_fields,
 
 namespace Checkers {
 
-
 void CheckersGame::init_checkers_game_board() {
   for (int i = 0; i < BOARD_SIDE_LENGTH; ++i) {
     game_board[0][i] = OUTSIDE_FIELD;
@@ -341,9 +340,7 @@ CheckersGame::make_minimax_move(int depth, Player player,
   return Play(best_move, move_type);
 }
 
-CheckersGame::CheckersGame() {
-  init_checkers_game_board();
-}
+CheckersGame::CheckersGame() { init_checkers_game_board(); }
 
 CheckersGame::CheckersGame(const CheckersGame &game) {
   for (int row = 0; row < BOARD_SIDE_LENGTH; ++row) {
@@ -388,7 +385,7 @@ FullPlay CheckersGame::play(int depth, Player player) {
   return *play;
 }
 
-Board const& CheckersGame::lazy_get_reference_board() { 
+Board const &CheckersGame::lazy_get_reference_board() {
   if (reference_board[0][0] == REF_OUTSIDE_FIELD) {
     return reference_board;
   }
@@ -415,8 +412,18 @@ Board const& CheckersGame::lazy_get_reference_board() {
   }
 
   return reference_board;
+}
+
+std::optional<FieldCoordinates>
+CheckersGame::translate_field_index(int field_index) {
+  if (field_index > REF_MAX_FIELD_INDEX || field_index < 0) {
+    return std::nullopt;
   }
 
+  int row = field_index / ACTIVE_BOARD_SIDE_LENGTH;
+  int col = field_index % ACTIVE_BOARD_SIDE_LENGTH;
+
+  return FieldCoordinates(row, col);
+}
+
 } // namespace Checkers
-
-

@@ -16,4 +16,6 @@ void print_checkers_board(Board board) {
   }
 }
 
-int main(int argc, char **argv) { return 0; }
+int main(int argc, char **argv) { 
+  return 0; 
+  }

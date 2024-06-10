@@ -2,7 +2,7 @@
 CXX = g++
 
 # Compiler flags
-CXXFLAGS = -Wall -Wextra -std=c++11 -I./src/game
+CXXFLAGS = -Wall -Wextra -std=c++17 -I./src/game
 
 # Directories
 SRCDIR = src

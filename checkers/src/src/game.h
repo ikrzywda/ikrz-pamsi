@@ -5,8 +5,10 @@
 #include <map>
 #include <optional>
 #include <stdexcept>
+#include <string>
 #include <tuple>
 #include <vector>
+#include <numeric>
 
 #include "board.h"
 
@@ -45,7 +47,8 @@ static const FieldCoordinates DIAGONAL_MOVES[] = {
     FieldCoordinates(1, 1)};
 
 struct CheckersGame {
-  static Board const& lazy_get_reference_board();
+  static Board const &lazy_get_reference_board();
+  static std::optional<FieldCoordinates> translate_field_index(int field_index);
 
   Board game_board;
   GameStatus game_status;
@@ -55,7 +58,7 @@ struct CheckersGame {
   std::optional<PossibleMoves &>
   get_possible_moves(Player player,
                      std::optional<Play> last_capture_play = std::nullopt);
-  void make_move(FieldCoordinates start_field, FieldCoordinates target_field);  
+  void make_move(FieldCoordinates start_field, FieldCoordinates target_field);
   FullPlay play(int depth, Player player);
 
 private:
@@ -85,7 +88,6 @@ private:
 };
 
 } // namespace Checkers
-
 
 namespace Checkers::Utilities {
 bool is_field_black(int row, int col);
@@ -121,12 +123,31 @@ enum ParseError {
   INVALID_MOVE
 };
 
+template <typename T>
+using ParseResult = std::pair<std::optional<T>, std::optional<ParseError>>;
+
 using Token = std::pair<TokenId, std::string>;
-using DecodingResult = std::tuple<std::optional<FullPlay&>, ParseError>;
 
-std::string encode_play(const FullPlay const& play);
-std::string encode_move(const BoardMove &move);
+std::string encode_play(const FullPlay const &play);
 
-std::vector<Token> tokenize_move(std::string const& move);
-FullPlay decode_move(std::string const& move);
+std::vector<Token> &tokenize_move(std::string const &move);
+
+struct MoveDecoder {
+  static ParseResult<FullPlay> decode_move(std::string const &move);
+private:
+  std::string move;
+  std::vector<Token> tokens;
+  int current_token_index;
+
+  MoveDecoder(std::string const &move);
+  Token get_next_token();
+  Token get_current_token();
+  bool has_next_token();
+  
+  ParseResult<FieldCoordinates> decode_position();
+  ParseResult<FullPlay> decode_play();
+  ParseResult<MoveType> decode_move_type();
+}; 
+
 } // namespace Checkers::NotationEncoder
+
