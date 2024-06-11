@@ -1,44 +1,48 @@
-# Compiler
-CXX = g++
+# Define the compiler and flags
+CXX := clang++
+CXXFLAGS := -std=c++17 -Wall -Wextra -O2
 
-# Compiler flags
-CXXFLAGS = -Wall -Wextra -std=c++17 -I./src/game
+# Define the directories
+SRCDIR := src
+BUILDDIR := build
+BINDIR := src/bin
 
-# Directories
-SRCDIR = src
-
-# Source files
-SOURCES = $(SRCDIR)/main.cpp $(SRCDIR)/src/game.cpp $(SRCDIR)/src/minimax.cpp $(SRCDIR)/src/notation_encoder.cpp
-
-# Object files
-OBJECTS = $(SOURCES:.cpp=.o)
-
-# Executable
-EXECUTABLE = a.out
+# Define the target binary and its source files
+TARGET := $(BUILDDIR)/bin/checkers_client
+SRCS := $(wildcard $(SRCDIR)/client/*.cpp) $(wildcard $(SRCDIR)/checkers/*.cpp) $(BINDIR)/checkers_client.cpp
+HEADERS := $(wildcard $(SRCDIR)/client/*.h) $(wildcard $(SRCDIR)/checkers/*.h) $(wildcard $(SRCDIR)/include/*.h)
+OBJS := $(SRCS:$(SRCDIR)/%.cpp=$(BUILDDIR)/%.o)
 
 # Default target
-all: $(EXECUTABLE)
+all: $(TARGET)
 
-# Link
-$(EXECUTABLE): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $@
+# Build the client binary
+$(TARGET): $(OBJS) | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+	cp $@ ./   # Copy the executable to the project's root directory
 
-# Compile main.cpp
-$(SRCDIR)/main.o: $(SRCDIR)/main.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Compile game.cpp
-$(GAMEDIR)/game.o: $(GAMEDIR)/game.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+# Compile source files to object files
+$(BUILDDIR)/%.o: $(SRCDIR)/%.cpp | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-# Clean up
-clean:
-	rm -f $(OBJECTS) $(EXECUTABLE)
+# Create the build directory if it doesn't exist
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR) 
+	mkdir -p $(BUILDDIR)/client 
+	mkdir -p $(BUILDDIR)/checkers
+	mkdir -p $(BUILDDIR)/bin
 
-# Format code
+# Format the source and header files with clang-format using LLVM style
 format:
-	clang-format -i --style llvm $()
-
+	clang-format -i --style=llvm $(SRCS) $(HEADERS)
 
 # Phony targets
-.PHONY: all clean
+.PHONY: all clean format
+
+# Clean up the build artifacts
+clean:
+	rm -rf $(BUILDDIR)
+
+# Ensure that .cpp and .h files are not interpreted as actual targets
+.PHONY: $(SRCS) $(HEADERS)

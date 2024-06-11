@@ -1,4 +1,5 @@
 #pragma once
 
-#include "../src/board.h"
-#include "../src/game.h"
+#include "../checkers/board.h"
+#include "../checkers/game.h"
+#include "../client/client.h"
