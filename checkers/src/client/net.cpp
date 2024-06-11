@@ -7,14 +7,12 @@ std::optional<int> create_socket(ClientConfig &client_config) {
   }
   int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd < 0) {
-    std::cout << "Failed to create socket" << std::endl;
     return std::nullopt;
   }
 
   struct hostent *hostent_server =
       gethostbyname(client_config.hostname.c_str());
   if (hostent_server == nullptr) {
-    std::cout << "Failed to get host" << std::endl;
     return std::nullopt;
   }
 
@@ -84,7 +82,6 @@ void Client::run(ClientConfig &client_config) {
       client.send_move(encoded_turn.value());
     } else {
       std::string opponent_move = client.read_opponent_move();
-      std::cout << "OPPONENT" << opponent_move << std::endl;
       auto error = client.game_instance.make_move(opponent_move);
       if (error.has_value()) {
         std::cerr << "Invalid move" << std::endl;

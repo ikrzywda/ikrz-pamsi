@@ -352,7 +352,6 @@ CheckersGame::make_minimax_move(int depth, Player player,
         int score = Minimax::minimax(new_game, INT_MIN, INT_MAX, depth - 1,
                                      Player::BLACK);
 
-        std::cout << "SCORE " << score << std::endl;
         if (score > best_score) {
           best_score = score;
           best_move = BoardMove(starting_position, target_position);
@@ -360,7 +359,6 @@ CheckersGame::make_minimax_move(int depth, Player player,
       } else {
         int score = Minimax::minimax(new_game, INT_MIN, INT_MAX, depth - 1,
                                      Player::WHITE);
-        std::cout << "SCORE " << score << std::endl;
         if (score < best_score) {
           best_score = score;
           best_move = BoardMove(starting_position, target_position);
@@ -369,9 +367,6 @@ CheckersGame::make_minimax_move(int depth, Player player,
     }
   }
   MoveType move_type = get_move_type(best_move.first, best_move.second);
-  std::cout << "BEST MOVE " << best_move.first.first << " "
-            << best_move.first.second << " " << best_move.second.first << " "
-            << best_move.second.second << std::endl;
   make_move(best_move.first, best_move.second);
   return Play(best_move, move_type);
 }
@@ -379,7 +374,6 @@ CheckersGame::make_minimax_move(int depth, Player player,
 CheckersGame::CheckersGame() {
   lazy_get_reference_board();
   init_checkers_game_board();
-  print_board();
 }
 
 std::optional<Play> CheckersGame::play_minimax(Turn &play, int depth,
@@ -442,16 +436,6 @@ Board const &CheckersGame::lazy_get_reference_board() {
       }
     }
   }
-
-  std::cout << "INITIALIZING REFERENCE BOARD" << std::endl;
-  for (int row = 0; row < BOARD_SIDE_LENGTH; ++row) {
-    for (int col = 0; col < BOARD_SIDE_LENGTH; ++col) {
-      std::cout << reference_board[row][col] << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-
   return reference_board;
 }
 

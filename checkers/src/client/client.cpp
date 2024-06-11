@@ -3,7 +3,6 @@
 namespace Checkers::Client {
 ClientConfig::ClientConfig(int argc, char **argv) {
   if (argc != 7) {
-    std::cout << "Provided cout: " << argc << std::endl;
     throw std::invalid_argument("Invalid number of arguments");
   }
 

@@ -8,8 +8,6 @@ EncodedMove encode_play(Turn const &play) {
 
   for (auto &move : play) {
     auto [board_move, move_type] = move;
-    std::cout << "X " << board_move.first.first << " Y "
-              << board_move.first.second << std::endl;
     int start_field_index =
         reference_board[board_move.first.first][board_move.first.second];
     if (start_field_index == 0) {
@@ -20,17 +18,6 @@ EncodedMove encode_play(Turn const &play) {
     if (target_field_index == 0) {
       throw std::invalid_argument("Invalid target position");
     }
-
-    std::cout << "START FIELD INDEX" << start_field_index << std::endl;
-    std::cout << "TARGET FIELD INDEX" << target_field_index << std::endl;
-    std::cout << "INITIALIZING REFERENCE BOARD" << std::endl;
-    for (int row = 0; row < BOARD_SIDE_LENGTH; ++row) {
-      for (int col = 0; col < BOARD_SIDE_LENGTH; ++col) {
-        std::cout << reference_board[row][col] << " ";
-      }
-      std::cout << std::endl;
-    }
-    std::cout << std::endl;
 
     std::string encoded_move = "";
 
@@ -44,7 +31,6 @@ EncodedMove encode_play(Turn const &play) {
   }
   std::string res = std::accumulate(encoded_moves.begin(), encoded_moves.end(),
                                     std::string(""));
-  std::cout << "ENCODED MOVE: " << res << std::endl;
   return res;
 }
 
@@ -107,7 +93,6 @@ bool MoveDecoder::has_next_token() {
 
 ParseResult<FieldCoordinates> MoveDecoder::decode_position() {
   const auto &[token_id, value] = get_current_token();
-  std::cout << "TOKEN" << token_id << "  " << value << std::endl;
   if (token_id != TokenId::POSITION_INDEX) {
     return ParseResult<FieldCoordinates>(
         {std::nullopt, ParseError::INVALID_POSITION});
@@ -128,7 +113,6 @@ ParseResult<FieldCoordinates> MoveDecoder::decode_position() {
 
 ParseResult<MoveType> MoveDecoder::decode_move_type() {
   const auto &[token_id, _] = get_current_token();
-  std::cout << "TOKEN ID" << token_id << std::endl;
   if (token_id == TokenId::CAPTURE) {
     return ParseResult<MoveType>({MoveType::WHITE_CAPTURE, std::nullopt});
   } else if (token_id == TokenId::MOVE) {

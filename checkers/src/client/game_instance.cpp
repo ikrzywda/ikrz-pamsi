@@ -7,7 +7,6 @@ GameInstance::make_move(std::string move_code) {
   auto [play, parse_error] =
       NotationTranslation::MoveDecoder::decode_move(move_code);
   if (parse_error.has_value()) {
-    std::cout << "parse error" << parse_error.value() << std::endl;
     return GameInstanceError::INVALID_MOVE;
   }
 
@@ -28,7 +27,6 @@ GameInstance::make_move(std::string move_code) {
 }
 
 AIMove GameInstance::play_ai_turn(Player player, int depth) {
-  std::cout << "AI TURN" << std::endl;
   auto turn = game_instance.play_ai_turn(depth, player);
 
   if (!turn.has_value()) {
