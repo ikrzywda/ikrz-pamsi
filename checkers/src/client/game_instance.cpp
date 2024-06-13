@@ -20,6 +20,20 @@ GameInstance::make_move(std::string move_code) {
 
   for (const auto &[move, _] : play.value()) {
     const auto [start_field, target_field] = move;
+    const auto [start_row, start_col] = start_field;
+    const auto [target_row, target_col] = target_field;
+    const auto start_field_index =
+        Utilities::get_field_index(start_row, start_col);
+    const auto target_field_index =
+        Utilities::get_field_index(target_row, target_col);
+    std::cout << "Making move: " << start_field.first << ","
+              << start_field.second << " -> " << target_field.first << ","
+              << target_field.second << std::endl;
+    if (start_field_index.has_value() && target_field_index.has_value()) {
+      std::cout << "Making move: " << start_field_index.value() << " -> "
+                << target_field_index.value() << std::endl;
+    }
+
     game_instance.make_move(start_field, target_field);
   }
 

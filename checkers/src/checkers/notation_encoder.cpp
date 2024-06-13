@@ -25,7 +25,10 @@ EncodedMove encode_play(Turn const &play) {
       encoded_move += std::to_string(start_field_index);
     }
 
-    encoded_move += move_type == MoveType::WHITE_CAPTURE ? "x" : "-";
+    encoded_move += move_type == MoveType::WHITE_CAPTURE ||
+                            move_type == MoveType::BLACK_CAPTURE
+                        ? "x"
+                        : "-";
     encoded_move += std::to_string(target_field_index);
     encoded_moves.push_back(encoded_move);
   }

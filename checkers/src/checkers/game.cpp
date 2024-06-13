@@ -28,6 +28,20 @@ get_possible_fields(int row, int col, std::vector<DiagonalMove> &moves) {
   }
   return possible_fields;
 }
+
+std::optional<int> get_field_index(int row, int col) {
+  auto reference_board = CheckersGame::lazy_get_reference_board();
+
+  std::cout << "Row: " << row << " Col: " << col << std::endl;
+
+  if (row < 0 || row >= BOARD_SIDE_LENGTH || col < 0 ||
+      col >= BOARD_SIDE_LENGTH) {
+    return std::nullopt;
+  }
+
+  return reference_board[row][col];
+}
+
 } // namespace Checkers::Utilities
 
 namespace Checkers {
@@ -146,11 +160,6 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
     return INVALID_MOVE;
   }
 
-  if ((reference_board[start_row][start_col] == REF_OUTSIDE_FIELD) ||
-      (reference_board[target_row][target_col] == REF_OUTSIDE_FIELD)) {
-    return INVALID_MOVE;
-  }
-
   BoardField capture_field_type =
       start_field_type == BLACK_PIECE ? WHITE_PIECE : BLACK_PIECE;
   switch (start_field_type) {
@@ -186,7 +195,7 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
     break;
   }
   default: {
-    break;
+    return INVALID_MOVE;
   }
   }
   return start_field_type == BLACK_PIECE ? BLACK_MOVE : WHITE_MOVE;
@@ -219,7 +228,11 @@ std::optional<PossibleMovesForPiece> CheckersGame::get_possible_moves_for_piece(
                move_type == MoveType::WHITE_CAPTURE;
       });
 
+  std::cout << "HAS CAPTURES: " << has_captures << std::endl;
+
   bool _captures_only = captures_only || has_captures;
+
+  std::cout << "CAPTURES ONLY: " << _captures_only << std::endl;
   if (_captures_only) {
     moves.erase(std::remove_if(moves.begin(), moves.end(),
                                [this, field_coordinates](
@@ -242,21 +255,26 @@ std::optional<PossibleMoves>
 CheckersGame::get_possible_moves(Player player,
                                  std::optional<Play> last_capture_play) {
   if (last_capture_play.has_value()) {
+    std::cout << "LAST CAPTURE PLAY_--___" << std::endl;
     const auto &[last_move, last_move_type] = last_capture_play.value();
-    if ((player == Player::WHITE && last_move_type != WHITE_CAPTURE) ||
-        (player == Player::BLACK && last_move_type != BLACK_CAPTURE)) {
-      return std::nullopt;
-    }
-    const auto &[start_field, __has_captures] = last_move;
+    // if ((player == Player::WHITE && last_move_type != WHITE_CAPTURE) ||
+    //     (player == Player::BLACK && last_move_type != BLACK_CAPTURE)) {
+    //   return std::nullopt;
+    // }
+    const auto &[start_field, target_field] = last_move;
+    std::cout << "Start field: " << start_field.first << " "
+              << start_field.second << std::endl;
     auto moves_for_field =
-        get_possible_moves_for_piece(player, start_field, true);
+        get_possible_moves_for_piece(player, target_field, true);
     if (!moves_for_field.has_value()) {
+      std::cout << "NO MOVES FOR FIELD" << std::endl;
       return std::nullopt;
     }
 
     MovesMap _possible_moves = MovesMap();
     auto [_, has_captures] = moves_for_field.value();
     if (!has_captures) {
+      std::cout << "NO CAPTURES" << std::endl;
       return std::nullopt;
     }
     _possible_moves.emplace(start_field, moves_for_field.value());
@@ -300,6 +318,10 @@ void CheckersGame::make_move(FieldCoordinates start_field,
   BoardField start_field_type = (BoardField)game_board[start_row][start_col];
   MoveType move_type = get_move_type(start_field, target_field);
 
+  VerticalDirection vertical_direction = start_row - target_row > 0 ? UP : DOWN;
+  HorizontalDirection horizontal_direction =
+      start_col - target_col > 0 ? LEFT : RIGHT;
+
   if (move_type == INVALID_MOVE) {
     throw std::invalid_argument("make_move: Invalid move type");
   }
@@ -308,8 +330,8 @@ void CheckersGame::make_move(FieldCoordinates start_field,
     game_board[target_row][target_col] = start_field_type;
     game_board[start_row][start_col] = EMPTY_FIELD;
   } else if (move_type == BLACK_CAPTURE || move_type == WHITE_CAPTURE) {
-    int jumped_field_row = start_row + (start_row - target_row) / 2;
-    int jumped_field_col = start_col + (start_col - target_col) / 2;
+    int jumped_field_row = start_row + vertical_direction;
+    int jumped_field_col = start_col + horizontal_direction;
     game_board[target_row][target_col] = start_field_type;
     game_board[start_row][start_col] = EMPTY_FIELD;
     game_board[jumped_field_row][jumped_field_col] = EMPTY_FIELD;
@@ -330,6 +352,7 @@ CheckersGame::make_minimax_move(int depth, Player player,
   auto _possible_moves = get_possible_moves(player, last_play);
 
   if (!_possible_moves.has_value()) {
+    std::cout << "NO POSSIBLE MOVES____" << std::endl;
     return std::nullopt;
   }
 
@@ -379,23 +402,29 @@ CheckersGame::CheckersGame() {
 std::optional<Play> CheckersGame::play_minimax(Turn &play, int depth,
                                                Player player,
                                                std::optional<Play> last_play) {
+
   std::optional<Play> new_play = std::nullopt;
   if (last_play.has_value()) {
+    std::cout << "LAST PLAY" << std::endl;
     new_play = make_minimax_move(depth, player, last_play);
   } else {
+    std::cout << "CHUJNIA" << std::endl;
     new_play = make_minimax_move(depth, player, std::nullopt);
   }
 
   if (!new_play.has_value()) {
+    std::cout << "NO NEW PLAY" << std::endl;
     return std::nullopt;
   }
 
   play.push_back(new_play.value());
   const auto &[_, move_type] = new_play.value();
   if (move_type == BLACK_CAPTURE || move_type == WHITE_CAPTURE) {
+    std::cout << "RECURSING" << std::endl;
     return play_minimax(play, depth, player, new_play);
   }
 
+  std::cout << "MINMAX LENGTH: " << play.size() << std::endl;
   return new_play;
 }
 
@@ -412,10 +441,6 @@ std::optional<Turn> CheckersGame::play_ai_turn(int depth, Player player) {
 }
 
 Board const &CheckersGame::lazy_get_reference_board() {
-  if (reference_board[0][0] == REF_OUTSIDE_FIELD) {
-    return reference_board;
-  }
-
   for (int i = 0; i < BOARD_SIDE_LENGTH; ++i) {
     reference_board[0][i] = REF_OUTSIDE_FIELD;
     reference_board[BOARD_SIDE_LENGTH - 1][i] = REF_OUTSIDE_FIELD;

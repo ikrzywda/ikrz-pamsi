@@ -82,6 +82,7 @@ void Client::run(ClientConfig &client_config) {
       client.send_move(encoded_turn.value());
     } else {
       std::string opponent_move = client.read_opponent_move();
+      std::cout << "Opponent move: " << opponent_move << std::endl;
       auto error = client.game_instance.make_move(opponent_move);
       if (error.has_value()) {
         std::cerr << "Invalid move" << std::endl;
