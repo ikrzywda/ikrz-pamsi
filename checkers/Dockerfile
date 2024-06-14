@@ -1,5 +1,5 @@
 # Use an official GCC image as a parent image
-FROM gcc:latest
+FROM ubuntu:22.04
 
 # Set the working directory in the container
 WORKDIR /usr/src/app
@@ -8,7 +8,7 @@ WORKDIR /usr/src/app
 COPY . .
 
 # Install CMake
-RUN apt-get update && apt-get install -y cmake
+RUN apt-get update && apt-get install -y cmake && apt-get install -y g++
 
 # Create a build directory
 RUN mkdir -p build
