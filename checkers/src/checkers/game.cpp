@@ -83,7 +83,7 @@ FieldCoordinates CheckersGame::get_field_coordinates(int field_index) {
   int row = field_index / ACTIVE_BOARD_SIDE_LENGTH;
   int col = field_index % ACTIVE_BOARD_SIDE_LENGTH;
 
-  return std::make_tuple(row, col);
+  return FieldCoordinates(row, col);
 }
 
 std::vector<FieldCoordinates>

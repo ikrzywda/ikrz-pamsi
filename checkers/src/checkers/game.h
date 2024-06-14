@@ -11,6 +11,7 @@
 #include <tuple>
 #include <vector>
 #include <algorithm>
+#include <ctime>
 
 #include "board.h"
 
