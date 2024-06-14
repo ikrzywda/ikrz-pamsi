@@ -1,4 +1,5 @@
-# Use an official GCC image as a parent image
+# Generated with ChatGPT
+
 FROM ubuntu:22.04
 
 # Set the working directory in the container

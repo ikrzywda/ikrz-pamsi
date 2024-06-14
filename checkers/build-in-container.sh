@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Generated with ChatGPT
+
 # Step 1: Build the Docker image
 docker build -t checkers-client-builder .
 
