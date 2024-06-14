@@ -65,6 +65,7 @@ Player Client::get_player_from_turn_counter(int turn_counter) {
 
 void Client::run(ClientConfig &client_config) {
   Client client = Client(client_config);
+  CheckersGame::set_random_seed(client_config.rand_seed);
   int turn_counter = 0;
 
   auto player_turn_predicate = [&client, &turn_counter]() {

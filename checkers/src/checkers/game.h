@@ -75,6 +75,7 @@ static const FieldCoordinates DIAGONAL_MOVES[] = {
 struct CheckersGame {
   static Board const &lazy_get_reference_board();
   static std::optional<FieldCoordinates> translate_field_index(int field_index);
+  static void set_random_seed(int seed);
 
   Board game_board;
   GameStatus game_status;
@@ -90,6 +91,7 @@ struct CheckersGame {
   void print_board();
 
 private:
+  static int random_seed;
   static Board reference_board;
   void init_checkers_game_board();
 

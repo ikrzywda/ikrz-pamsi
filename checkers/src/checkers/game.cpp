@@ -32,8 +32,6 @@ get_possible_fields(int row, int col, std::vector<DiagonalMove> &moves) {
 std::optional<int> get_field_index(int row, int col) {
   auto reference_board = CheckersGame::lazy_get_reference_board();
 
-  std::cout << "Row: " << row << " Col: " << col << std::endl;
-
   if (row < 0 || row >= BOARD_SIDE_LENGTH || col < 0 ||
       col >= BOARD_SIDE_LENGTH) {
     return std::nullopt;
@@ -47,6 +45,9 @@ std::optional<int> get_field_index(int row, int col) {
 namespace Checkers {
 
 Board CheckersGame::reference_board;
+int CheckersGame::random_seed = std::time(0);
+
+void CheckersGame::set_random_seed(int seed) { random_seed = seed; }
 
 void CheckersGame::init_checkers_game_board() {
   for (int i = 0; i < BOARD_SIDE_LENGTH; ++i) {
@@ -237,11 +238,8 @@ std::optional<PossibleMovesForPiece> CheckersGame::get_possible_moves_for_piece(
                move_type == MoveType::WHITE_CAPTURE;
       });
 
-  std::cout << "HAS CAPTURES: " << has_captures << std::endl;
-
   bool _captures_only = captures_only || has_captures;
 
-  std::cout << "CAPTURES ONLY: " << _captures_only << std::endl;
   if (_captures_only) {
     moves.erase(std::remove_if(moves.begin(), moves.end(),
                                [this, field_coordinates](
@@ -264,29 +262,20 @@ std::optional<PossibleMoves>
 CheckersGame::get_possible_moves(Player player,
                                  std::optional<Play> last_capture_play) {
   if (last_capture_play.has_value()) {
-    std::cout << "LAST CAPTURE PLAY_--___" << std::endl;
     const auto &[last_move, last_move_type] = last_capture_play.value();
-    // if ((player == Player::WHITE && last_move_type != WHITE_CAPTURE) ||
-    //     (player == Player::BLACK && last_move_type != BLACK_CAPTURE)) {
-    //   return std::nullopt;
-    // }
     const auto &[start_field, target_field] = last_move;
-    std::cout << "Start field: " << start_field.first << " "
-              << start_field.second << std::endl;
     auto moves_for_field =
         get_possible_moves_for_piece(player, target_field, true);
     if (!moves_for_field.has_value()) {
-      std::cout << "NO MOVES FOR FIELD" << std::endl;
       return std::nullopt;
     }
 
     MovesMap _possible_moves = MovesMap();
     auto [_, has_captures] = moves_for_field.value();
     if (!has_captures) {
-      std::cout << "NO CAPTURES" << std::endl;
       return std::nullopt;
     }
-    _possible_moves.emplace(start_field, moves_for_field.value());
+    _possible_moves.emplace(target_field, moves_for_field.value());
     return PossibleMoves(_possible_moves, has_captures);
   }
 
@@ -357,17 +346,19 @@ void CheckersGame::make_move(FieldCoordinates start_field,
 std::optional<Play>
 CheckersGame::make_minimax_move(int depth, Player player,
                                 std::optional<Play> last_play) {
-  BoardMove best_move;
+  std::optional<BoardMove> best_move = std::nullopt;
   auto _possible_moves = get_possible_moves(player, last_play);
 
   if (!_possible_moves.has_value()) {
-    std::cout << "NO POSSIBLE MOVES____" << std::endl;
     return std::nullopt;
   }
 
   auto [possible_moves, has_captures] = _possible_moves.value();
-
   int best_score = player == Player::WHITE ? INT_MIN : INT_MAX;
+
+  auto override_best_move_when_equal = [best_move, best_score](int score) {
+    return best_move.has_value() || (score == best_score && std::rand() % 2);
+  };
 
   for (auto &move : possible_moves) {
     auto [starting_position, possible_moves] = move;
@@ -383,24 +374,32 @@ CheckersGame::make_minimax_move(int depth, Player player,
       if (player == Player::WHITE) {
         int score = Minimax::minimax(new_game, INT_MIN, INT_MAX, depth - 1,
                                      Player::BLACK);
-
-        if (score > best_score) {
+        bool should_override_best_move =
+            score > best_score || override_best_move_when_equal(score);
+        if (should_override_best_move) {
           best_score = score;
           best_move = BoardMove(starting_position, target_position);
         }
+
       } else {
         int score = Minimax::minimax(new_game, INT_MIN, INT_MAX, depth - 1,
                                      Player::WHITE);
-        if (score < best_score) {
+        bool should_override_best_move =
+            score < best_score || override_best_move_when_equal(score);
+        if (should_override_best_move) {
           best_score = score;
           best_move = BoardMove(starting_position, target_position);
         }
       }
     }
   }
-  MoveType move_type = get_move_type(best_move.first, best_move.second);
-  make_move(best_move.first, best_move.second);
-  return Play(best_move, move_type);
+  if (!best_move.has_value()) {
+    return std::nullopt;
+  }
+  MoveType move_type =
+      get_move_type(best_move.value().first, best_move.value().second);
+  make_move(best_move.value().first, best_move.value().second);
+  return Play(best_move.value(), move_type);
 }
 
 CheckersGame::CheckersGame() {
@@ -414,26 +413,21 @@ std::optional<Play> CheckersGame::play_minimax(Turn &play, int depth,
 
   std::optional<Play> new_play = std::nullopt;
   if (last_play.has_value()) {
-    std::cout << "LAST PLAY" << std::endl;
     new_play = make_minimax_move(depth, player, last_play);
   } else {
-    std::cout << "CHUJNIA" << std::endl;
     new_play = make_minimax_move(depth, player, std::nullopt);
   }
 
   if (!new_play.has_value()) {
-    std::cout << "NO NEW PLAY" << std::endl;
     return std::nullopt;
   }
 
   play.push_back(new_play.value());
   const auto &[_, move_type] = new_play.value();
   if (move_type == BLACK_CAPTURE || move_type == WHITE_CAPTURE) {
-    std::cout << "RECURSING" << std::endl;
     return play_minimax(play, depth, player, new_play);
   }
 
-  std::cout << "MINMAX LENGTH: " << play.size() << std::endl;
   return new_play;
 }
 
