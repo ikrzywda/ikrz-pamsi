@@ -18,7 +18,7 @@ std::optional<int> create_socket(ClientConfig &client_config) {
 
   struct sockaddr_in server_address;
   server_address.sin_family = AF_INET;
-  memcpy(&server_address.sin_addr, hostent_server->h_addr,
+  std::memcpy(&server_address.sin_addr, hostent_server->h_addr,
          hostent_server->h_length);
   server_address.sin_port = htons(client_config.port);
 
