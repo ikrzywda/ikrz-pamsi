@@ -162,6 +162,15 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
 
   BoardField capture_field_type =
       start_field_type == BLACK_PIECE ? WHITE_PIECE : BLACK_PIECE;
+
+  auto capture_predicate = [start_field_type](BoardField field_type) {
+    if (start_field_type == BLACK_PIECE || start_field_type == BLACK_KING) {
+      return field_type == WHITE_PIECE || field_type == WHITE_KING;
+    } else {
+      return field_type == BLACK_PIECE || field_type == BLACK_KING;
+    }
+  };
+
   switch (start_field_type) {
   case BLACK_PIECE:
   case WHITE_PIECE: {
@@ -171,7 +180,7 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
       BoardField jumped_field_type =
           (BoardField)game_board[jumped_field_row][jumped_field_col];
 
-      if (jumped_field_type == capture_field_type) {
+      if (capture_predicate(jumped_field_type)) {
         return start_field_type == BLACK_PIECE ? BLACK_CAPTURE : WHITE_CAPTURE;
       } else {
         return INVALID_MOVE;
@@ -186,7 +195,7 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
       int jumped_field_col = start_col + horizontal_direction;
       BoardField jumped_field_type =
           (BoardField)game_board[jumped_field_row][jumped_field_col];
-      if (jumped_field_type == capture_field_type) {
+      if (capture_predicate(jumped_field_type)) {
         return start_field_type == BLACK_KING ? BLACK_CAPTURE : WHITE_CAPTURE;
       } else {
         return INVALID_MOVE;
@@ -340,7 +349,7 @@ void CheckersGame::make_move(FieldCoordinates start_field,
   if (start_field_type == BoardField::BLACK_PIECE &&
       target_row == BOARD_SIDE_LENGTH - 2) {
     game_board[target_row][target_col] = BoardField::BLACK_KING;
-  } else if (start_field_type == BoardField::BLACK_PIECE && target_row == 1) {
+  } else if (start_field_type == BoardField::WHITE_PIECE && target_row == 1) {
     game_board[target_row][target_col] = BoardField::WHITE_KING;
   }
 }
