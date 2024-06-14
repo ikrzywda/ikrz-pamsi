@@ -161,9 +161,6 @@ MoveType CheckersGame::get_move_type(FieldCoordinates start_field,
     return INVALID_MOVE;
   }
 
-  BoardField capture_field_type =
-      start_field_type == BLACK_PIECE ? WHITE_PIECE : BLACK_PIECE;
-
   auto capture_predicate = [start_field_type](BoardField field_type) {
     if (start_field_type == BLACK_PIECE || start_field_type == BLACK_KING) {
       return field_type == WHITE_PIECE || field_type == WHITE_KING;
@@ -485,13 +482,4 @@ CheckersGame::translate_field_index(int field_index) {
   return std::nullopt;
 }
 
-void CheckersGame::print_board() {
-  for (int row = 0; row < BOARD_SIDE_LENGTH; ++row) {
-    for (int col = 0; col < BOARD_SIDE_LENGTH; ++col) {
-      std::cout << game_board[row][col] << " ";
-    }
-    std::cout << std::endl;
-  }
-  std::cout << std::endl;
-}
 } // namespace Checkers

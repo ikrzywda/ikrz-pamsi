@@ -26,5 +26,6 @@ ClientConfig::ClientConfig(int argc, char **argv) {
   rand_seed = std::stoi(argv[4]);
   hostname = argv[5];
   port = std::stoi(argv[6]);
+  process_name = argv[0];
 }
 }; // namespace Checkers::Client

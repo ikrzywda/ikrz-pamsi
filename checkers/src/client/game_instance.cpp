@@ -20,12 +20,6 @@ GameInstance::make_move(std::string move_code) {
 
   for (const auto &[move, _] : play.value()) {
     const auto [start_field, target_field] = move;
-    const auto [start_row, start_col] = start_field;
-    const auto [target_row, target_col] = target_field;
-    const auto start_field_index =
-        Utilities::get_field_index(start_row, start_col);
-    const auto target_field_index =
-        Utilities::get_field_index(target_row, target_col);
     game_instance.make_move(start_field, target_field);
   }
 
@@ -38,8 +32,6 @@ AIMove GameInstance::play_ai_turn(Player player, int depth) {
   if (!turn.has_value()) {
     return {std::nullopt, GameInstanceError::GAME_OVER};
   }
-
-  game_instance.print_board();
 
   auto encoded_move = NotationTranslation::encode_play(turn.value());
   return AIMove{encoded_move, std::nullopt};

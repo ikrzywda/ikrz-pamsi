@@ -77,18 +77,15 @@ struct CheckersGame {
   static std::optional<FieldCoordinates> translate_field_index(int field_index);
   static void set_random_seed(int seed);
 
-  Board game_board;
-  GameStatus game_status;
-
   CheckersGame();
 
+  Board game_board;
+  GameStatus game_status;
   std::optional<PossibleMoves>
   get_possible_moves(Player player,
                      std::optional<Play> last_capture_play = std::nullopt);
-
   void make_move(FieldCoordinates start_field, FieldCoordinates target_field);
   std::optional<Turn> play_ai_turn(int depth, Player player);
-  void print_board();
 
 private:
   static int random_seed;

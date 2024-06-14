@@ -77,16 +77,22 @@ void Client::run(ClientConfig &client_config) {
       auto [encoded_turn, error] = client.game_instance.play_ai_turn(
           client.player, client_config.minimax_depth);
       if (error.has_value()) {
-        std::cerr << "Game over" << std::endl;
+        std::cerr << client_config.process_name << ": Game over" << std::endl;
         break;
       }
       client.send_move(encoded_turn.value());
     } else {
-      std::string opponent_move = client.read_opponent_move();
-      std::cout << "Opponent move: " << opponent_move << std::endl;
-      auto error = client.game_instance.make_move(opponent_move);
-      if (error.has_value()) {
-        std::cerr << "Invalid move" << std::endl;
+      try {
+        std::string opponent_move = client.read_opponent_move();
+        auto error = client.game_instance.make_move(opponent_move);
+        if (error.has_value()) {
+          std::cerr << client_config.process_name << ": Invalid move"
+                    << std::endl;
+          break;
+        }
+      } catch (const std::runtime_error &e) {
+        std::cerr << client_config.process_name << ": Runtime error "
+                  << e.what() << std::endl;
         break;
       }
     }

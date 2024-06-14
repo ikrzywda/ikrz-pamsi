@@ -20,6 +20,7 @@ using AIMove = std::pair<std::optional<NotationTranslation::EncodedMove>,
                          std::optional<GameInstanceError>>;
 
 struct ClientConfig {
+  std::string process_name;
   GameType game_type;
   Player player;
   int minimax_depth;
